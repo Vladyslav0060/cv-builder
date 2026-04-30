@@ -1,0 +1,97 @@
+services:
+  db:
+    image: postgres:17-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    container_name: db
+    volumes:
+      - db:/var/lib/postgresql/data
+    ports:
+      - '${DB_PORT}:5432'
+    networks:
+      - app-net
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 0
+
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: cv-api-container
+  #   env_file: '.env'
+  #   # environment:
+  #   #   - PORT=${PORT}
+  #   ports:
+  #     - '${PORT}:${PORT}'
+  #   depends_on:
+  #     - db
+  #   volumes:
+  #     - ./src:/app/src
+  #   networks:
+  #     - app-net
+  #   healthcheck:
+  #     test: ['CMD-SHELL', 'curl', '-f', 'http:localhost:${PORT}/healthcheck']
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 0
+
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: always
+    container_name: pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_PASSWORD}
+    ports:
+      - '${PGADMIN_HOST_PORT}:${PGADMIN_CONTAINER_PORT}'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - db
+    networks:
+      - app-net
+
+  redis:
+    image: redis:latest
+    container_name: redis-container
+    ports:
+      - '${REDIS_PORT}:6379'
+    networks:
+      - app-net
+    restart: always
+    volumes:
+      - cache:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping', '']
+      interval: 10s
+      timeout: 5s
+      retries: 0
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    restart: always
+    networks:
+      - app-net
+    depends_on:
+      - redis
+    ports:
+      - '5540:5540'
+    volumes:
+      - redisinsight:/data
+
+networks:
+  app-net:
+    driver: bridge
+
+volumes:
+  db:
+  pgadmin_data:
+  cache:
+    driver: local
+  redisinsight:
+    driver: local

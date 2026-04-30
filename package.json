@@ -1,0 +1,15 @@
+{
+  "name": "cv-assistant",
+  "description": "",
+  "scripts": {
+    "dev": "concurrently \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "cd apps/api && npm run start:dev",
+    "dev:web": "cd apps/web && npm run dev"
+  },
+  "dependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^11.0.0"
+  }
+}
