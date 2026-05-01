@@ -6,6 +6,7 @@ import { ArrowRight, Clock3, FileText, Plus, Sparkles } from "lucide-react";
 
 import { ROUTES } from "@/common/routes";
 import { useGetDocumentsPreview } from "@/hooks/document/useGetDocumentsPreview";
+import { useGetAiUsage } from "@/hooks/ai/useGetAiUsage";
 import { PageBreadcrumbs } from "@/components/layout/page-breadcrumbs";
 import {
   Card,
@@ -51,6 +52,7 @@ function formatRelativeDate(value: string) {
 export default function Documents() {
   const router = useRouter();
   const { data: documents } = useGetDocumentsPreview();
+  const { data: aiUsage } = useGetAiUsage();
 
   const items = [...(documents ?? [])].sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
@@ -61,6 +63,11 @@ export default function Documents() {
   ).length;
   const coverLetterCount = totalDocuments - resumeCount;
   const latestDocument = items[0];
+  const requestUsageLabel = aiUsage
+    ? aiUsage.unlimited
+      ? "Unlimited"
+      : `${aiUsage.remaining}/${aiUsage.total}`
+    : "—";
 
   return (
     <div className="relative min-h-full overflow-hidden">
@@ -108,7 +115,7 @@ export default function Documents() {
                 </div>
               </CardHeader>
 
-              <CardContent className="grid gap-3 pt-4 sm:grid-cols-3">
+              <CardContent className="grid gap-3 pt-4 sm:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-2xl border border-border/60 bg-muted/40 p-4">
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Total
@@ -138,6 +145,19 @@ export default function Documents() {
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Tailored letters
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border/60 bg-muted/40 p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    AI requests
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold">
+                    {requestUsageLabel}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {aiUsage?.unlimited
+                      ? "Daily limit disabled in dev"
+                      : "Remaining today"}
                   </p>
                 </div>
               </CardContent>

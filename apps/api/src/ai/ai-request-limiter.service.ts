@@ -26,6 +26,36 @@ export class AiRequestLimiterService {
     }
   }
 
+  async getDailyUsage(userId: string) {
+    const total = MAX_DAILY_REQUESTS;
+
+    if (this.isDevelopment()) {
+      return {
+        used: 0,
+        total,
+        remaining: total,
+        unlimited: true,
+      };
+    }
+
+    const day = this.getUtcDayStart();
+    const rows = await this.prisma.$queryRaw<{ count: number }[]>`
+      SELECT COALESCE(SUM("count"), 0)::int AS "count"
+      FROM "ai_request_usages"
+      WHERE "user_id" = ${userId}
+        AND "day" = ${day}
+    `;
+
+    const used = rows[0]?.count ?? 0;
+
+    return {
+      used,
+      total,
+      remaining: Math.max(total - used, 0),
+      unlimited: false,
+    };
+  }
+
   private acquireConcurrencySlot(): Promise<() => void> {
     if (this.activeRequests < MAX_CONCURRENT_REQUESTS) {
       this.activeRequests += 1;
