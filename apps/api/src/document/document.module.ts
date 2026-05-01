@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common';
 import { DocumentService } from './document.service';
-import { UserModule } from 'src/user/user.module';
 import { DocumentController } from './document.controller';
 import { PrismaModule } from 'src/prisma/prisma.module';
-import { UserService } from 'src/user/user.service';
-import { AiService } from 'src/ai/ai.service';
+import { UserModule } from 'src/user/user.module';
+import { AiModule } from 'src/ai/ai.module';
 
 @Module({
-  imports: [PrismaModule],
-  providers: [DocumentService, UserService],
+  imports: [PrismaModule, UserModule, AiModule],
+  providers: [DocumentService],
   controllers: [DocumentController],
   exports: [DocumentService],
 })

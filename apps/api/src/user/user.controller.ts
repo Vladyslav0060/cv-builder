@@ -6,9 +6,7 @@ import {
   Get,
   Param,
   Patch,
-  Post,
   Req,
-  Session,
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
@@ -66,10 +64,5 @@ export class UserController {
   async findUserById(@Param('id') id: string): Promise<EnrichedUserDto> {
     const res = await this.userService.findEnrichedUser(id);
     return toEnrichedUserDto(res);
-  }
-
-  @Get()
-  async() {
-    return 'test';
   }
 }

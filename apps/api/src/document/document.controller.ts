@@ -78,7 +78,7 @@ Title: ${jobTitle}
 Company: ${company}
 Description: ${description}
 `;
-    const response = await this.aiService.ask(userPrompt, {
+    const response = await this.aiService.ask(userId, userPrompt, {
       system: systemPrompt,
     });
     return this.documentService.createDocument(session.passport.user, {
