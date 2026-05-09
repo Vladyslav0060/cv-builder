@@ -99,8 +99,8 @@ export default function Documents() {
                     </CardTitle>
                     <CardDescription className="max-w-xl text-sm sm:text-base">
                       Review your latest drafts, jump back into the most recent
-                      version, or start a new document from the current set of
-                      profile data.
+                      version, or start a new document from your saved account
+                      data or from scratch.
                     </CardDescription>
                   </div>
 
@@ -312,8 +312,8 @@ export default function Documents() {
                   <div className="space-y-2">
                     <h3 className="text-lg font-semibold">No documents yet</h3>
                     <p className="max-w-lg text-sm text-muted-foreground">
-                      Create your first document using the profile details you
-                      already have saved. You can always refine it later.
+                      Create your first document using saved account details or
+                      write one from scratch. You can always refine it later.
                     </p>
                   </div>
                   <Button asChild>

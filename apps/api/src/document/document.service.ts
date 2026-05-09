@@ -34,9 +34,13 @@ export class DocumentService {
     });
   }
 
-  async createDocument(userId: string, createDocumentDto: CreateDocumentDto) {
+  async createDocument(
+    userId: string,
+    createDocumentDto: CreateDocumentDto,
+    content: string,
+  ) {
     try {
-      const { content, type, jobTitle } = createDocumentDto;
+      const { type, jobTitle } = createDocumentDto;
       return this.prisma.document.create({
         data: {
           userId,

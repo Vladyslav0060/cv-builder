@@ -1,6 +1,28 @@
 import { EnrichedUser } from 'src/user/user.select';
+import { DocumentApplicantInfoDto } from 'src/document/dto/create-document.dto';
 
-export const buildApplicantInfo = (userProfile: EnrichedUser): string => {
+type ApplicantInfoLike = Pick<
+  EnrichedUser | DocumentApplicantInfoDto,
+  | 'firstName'
+  | 'lastName'
+  | 'email'
+  | 'phone'
+  | 'avatarUrl'
+  | 'address'
+  | 'city'
+  | 'state'
+  | 'zip'
+  | 'country'
+  | 'linkedIn'
+  | 'portfolio'
+  | 'summary'
+  | 'skills'
+  | 'experience'
+  | 'education'
+  | 'achievements'
+>;
+
+export const buildApplicantInfo = (userProfile: ApplicantInfoLike): string => {
   const applicantInfo = `
     Applicant Information:
     Name: ${[userProfile?.firstName, userProfile?.lastName]
@@ -8,7 +30,7 @@ export const buildApplicantInfo = (userProfile: EnrichedUser): string => {
       .join(' ')}
 Email: ${userProfile?.email ?? ''}
 Phone: ${userProfile?.phone ?? ''}
-Address: ${[userProfile?.address, userProfile?.city, userProfile?.zip]
+Address: ${[userProfile?.address, userProfile?.city, userProfile?.state, userProfile?.zip, userProfile?.country]
     .filter(Boolean)
     .join(', ')}
 LinkedIn: ${userProfile?.linkedIn ?? ''}

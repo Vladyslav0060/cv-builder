@@ -1,5 +1,6 @@
 import { documentControllerCreateDocument } from "@/api/generated";
 import { CreateDocumentDto } from "@/api/generated.schemas";
+import { ROUTES } from "@/common/routes";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
@@ -11,8 +12,7 @@ export const useCreateDocument = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      console.log(data);
-      router.push("/");
+      router.push(`${ROUTES.DOCUMENTS}/${data.id}`);
     },
     onError: (error) => {
       console.error(error);

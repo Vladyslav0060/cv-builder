@@ -1,7 +1,17 @@
-import { Body, Controller, Get, Param, Post, Session } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Session,
+} from '@nestjs/common';
 import { DocumentService } from './document.service';
 import { ApiBody, ApiOkResponse, ApiParam } from '@nestjs/swagger';
-import { CreateDocumentDto } from './dto/create-document.dto';
+import {
+  CreateDocumentDto,
+  CreateDocumentDtoCreationMode,
+} from './dto/create-document.dto';
 import { UserService } from 'src/user/user.service';
 import { buildApplicantInfo } from 'src/ai/utils';
 import { AiService } from 'src/ai/ai.service';
@@ -56,34 +66,61 @@ export class DocumentController {
   @ApiBody({
     type: CreateDocumentDto,
   })
+  @ApiOkResponse({ type: GetDocumentDto })
   async createDocument(
     @Session() session: any,
     @Body() body: CreateDocumentDto,
   ) {
-    const { company, description, jobTitle, type } = body;
-    console.log({ body });
+    const {
+      company,
+      creationMode = CreateDocumentDtoCreationMode.ACCOUNT,
+      description,
+      jobTitle,
+      type,
+    } = body;
     const userId = session.passport.user;
-    const user = await this.userService.findEnrichedUser(userId);
-    const applicantInfo = buildApplicantInfo(user);
+    const maxOutputTokens = process.env.MAX_OUTPUT_TOKENS
+      ? Number(process.env.MAX_OUTPUT_TOKENS)
+      : 600;
+    const applicantSource =
+      body.applicantInfo ??
+      (creationMode === CreateDocumentDtoCreationMode.ACCOUNT
+        ? await this.userService.findEnrichedUser(userId)
+        : undefined);
+    const applicantInfo = applicantSource
+      ? buildApplicantInfo(applicantSource)
+      : '';
 
-    const systemPrompt = `You are an expert career coach. Write a professional ${
-      type
-    } using the applicant's details and tailoring it to the job description. Keep formatting clean and professional.`;
+    const systemPrompt =
+      creationMode === CreateDocumentDtoCreationMode.ACCOUNT
+        ? `You are an expert career coach. Write a professional ${
+            type
+          } using the applicant's details and tailoring it to the job description. Keep formatting clean and professional. Use ${maxOutputTokens} tokens max.`
+        : `You are an expert career coach. Write a professional ${
+            type
+          } from scratch using the job brief. Keep formatting clean and professional. Use ${maxOutputTokens} tokens max.`;
 
-    const userPrompt = `
-${applicantInfo}
-
-Job Posting:
+    const userPrompt = [
+      applicantInfo || null,
+      `Job Posting:
 Title: ${jobTitle}
 Company: ${company}
-Description: ${description}
-`;
+Description: ${description}`,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
     const response = await this.aiService.ask(userId, userPrompt, {
       system: systemPrompt,
+      maxOutputTokens,
     });
-    return this.documentService.createDocument(session.passport.user, {
-      ...body,
-      content: response.text,
-    });
+    const documentContent = response.text;
+
+    const document = await this.documentService.createDocument(
+      session.passport.user,
+      body,
+      documentContent,
+    );
+
+    return toGetDocumentDto(document);
   }
 }
