@@ -15,6 +15,7 @@ export const modeStepSchema = z.object({
     CreateDocumentDtoCreationMode.ACCOUNT,
     CreateDocumentDtoCreationMode.SCRATCH,
   ]),
+  type: z.enum([DocumentType.COVER_LETTER, DocumentType.RESUME]),
 });
 
 export const accountPersonalStepSchema = z.object({

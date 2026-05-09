@@ -19,6 +19,11 @@ import { toGetDocumentsPreviewDto } from './mappers/get-documents.mapper';
 import { GetDocumentsPreviewDto } from './dto/get-documents-preview.dto';
 import { GetDocumentDto } from './dto/get-document.dto';
 import { toGetDocumentDto } from './mappers/get-document.mapper';
+import { DocumentType } from 'generated/prisma/enums';
+
+function getDocumentTypeLabel(type: DocumentType) {
+  return type === 'RESUME' ? 'resume' : 'cover letter';
+}
 
 @Controller('document')
 export class DocumentController {
@@ -94,10 +99,10 @@ export class DocumentController {
     const systemPrompt =
       creationMode === CreateDocumentDtoCreationMode.ACCOUNT
         ? `You are an expert career coach. Write a professional ${
-            type
+            getDocumentTypeLabel(type)
           } using the applicant's details and tailoring it to the job description. Keep formatting clean and professional. Use ${maxOutputTokens} tokens max.`
         : `You are an expert career coach. Write a professional ${
-            type
+            getDocumentTypeLabel(type)
           } from scratch using the job brief. Keep formatting clean and professional. Use ${maxOutputTokens} tokens max.`;
 
     const userPrompt = [

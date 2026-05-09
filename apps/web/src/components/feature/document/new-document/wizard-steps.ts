@@ -239,10 +239,15 @@ const scratchSteps: WizardStep[] = [
 export const modeStep: WizardFormStep = {
   kind: "form",
   id: "mode",
-  title: "How do you want to start?",
+  title: "Start with the basics",
   description:
-    "Choose whether we should generate from your saved account data or write everything from scratch.",
+    "Pick the document type and choose whether we should generate from your saved account data or write everything from scratch.",
   fields: [
+    {
+      name: "type",
+      label: "Document type",
+      placeholder: "Select a document type",
+    },
     {
       name: "creationMode",
       label: "Starting mode",
