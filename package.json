@@ -7,9 +7,12 @@
     "dev:web": "cd apps/web && npm run dev"
   },
   "dependencies": {
-    "concurrently": "^9.2.1"
+    "@react-pdf/renderer": "^4.5.1",
+    "concurrently": "^9.2.1",
+    "react": "^19.2.6"
   },
   "devDependencies": {
+    "@types/react": "^19.2.14",
     "dotenv-cli": "^11.0.0"
   }
 }

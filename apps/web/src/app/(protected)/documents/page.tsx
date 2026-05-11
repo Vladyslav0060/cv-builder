@@ -31,6 +31,11 @@ const documentTypeClasses = {
   COVER_LETTER: "bg-sky-500/10 text-sky-700 dark:text-sky-300",
 } as const;
 
+const baseUrlByType = {
+  COVER_LETTER: ROUTES.COVER_LETTER,
+  RESUME: ROUTES.RESUME,
+} as const;
+
 function formatUpdatedAt(value: string) {
   return new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
@@ -264,7 +269,9 @@ export default function Documents() {
                     key={document.id}
                     className="group cursor-pointer border-border/60 bg-card/85 shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg"
                     onClick={() =>
-                      router.push(`${ROUTES.DOCUMENTS}/${document.id}`)
+                      router.push(
+                        `${baseUrlByType[document.type]}/${document.id}`,
+                      )
                     }
                   >
                     <CardHeader className="border-b border-border/50 pb-4">

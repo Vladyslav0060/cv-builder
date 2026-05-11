@@ -8,6 +8,7 @@ import {
   TEXT_FORMAT_TRANSFORMERS,
   TEXT_MATCH_TRANSFORMERS,
   $convertFromMarkdownString,
+  $convertToMarkdownString,
 } from "@lexical/markdown";
 import {
   InitialConfigType,
@@ -29,6 +30,7 @@ type EditorProps = {
   editorSerializedState?: SerializedEditorState;
   initialMarkdown?: string;
   onChange?: (editorState: EditorState) => void;
+  onMarkdownChange?: (markdown: string) => void;
   onSerializedChange?: (editorSerializedState: SerializedEditorState) => void;
 };
 
@@ -57,6 +59,7 @@ function EditorContent({
   editorSerializedState,
   initialMarkdown,
   onChange,
+  onMarkdownChange,
   onSerializedChange,
 }: EditorProps) {
   const initialConfig: InitialConfigType = {
@@ -83,6 +86,11 @@ function EditorContent({
           ignoreSelectionChange={true}
           onChange={(editorState) => {
             onChange?.(editorState);
+            onMarkdownChange?.(
+              editorState.read(() =>
+                $convertToMarkdownString(markdownTransformers),
+              ),
+            );
             onSerializedChange?.(editorState.toJSON());
           }}
         />

@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Post,
+  StreamableFile,
   Session,
 } from '@nestjs/common';
 import { DocumentService } from './document.service';
@@ -48,6 +49,34 @@ export class DocumentController {
     } catch (error) {
       throw error;
     }
+  }
+
+  @Get(':documentId/pdf')
+  @ApiParam({ name: 'documentId', example: '1', required: true })
+  async getUserDocumentPdf(
+    @Session() session: any,
+    @Param('documentId') documentId: string,
+  ) {
+    const userProfile = await this.userService.findEnrichedUser(
+      session.passport.user,
+    );
+    const document = await this.documentService.getUserDocumentById(
+      session.passport.user,
+      documentId,
+    );
+    const pdfBuffer = await this.documentService.getUserDocumentPdfById(
+      session.passport.user,
+      documentId,
+      userProfile,
+    );
+    const filename = `${document.title || 'resume'}.pdf`
+      .replace(/[^\w.-]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    return new StreamableFile(pdfBuffer, {
+      disposition: `attachment; filename="${filename}"`,
+      type: 'application/pdf',
+    });
   }
 
   @Get('all/preview')
