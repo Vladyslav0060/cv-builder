@@ -32,32 +32,41 @@ async function bootstrap() {
 
   app.use(cookieParser(process.env.APP_SECRET));
   const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
-  if (!connectionString) {
+  const usePersistentSessionStore =
+    process.env.npm_lifecycle_event === 'start:prod';
+  let sessionStore: PostgresSessionStore | undefined;
+
+  if (!usePersistentSessionStore) {
+    console.warn('Using the in-memory session store in dev mode.');
+  } else if (!connectionString) {
     throw new Error(
       'DATABASE_URL or DIRECT_URL is not set. Provide one for the session store.',
     );
+  } else {
+    sessionStore = new PostgresSessionStore(connectionString);
+    await sessionStore.init();
   }
 
-  const sessionStore = new PostgresSessionStore(connectionString);
-  await sessionStore.init();
+  const sessionOptions: session.SessionOptions = {
+    secret: process.env.APP_SECRET as string,
+    resave: false,
+    saveUninitialized: false,
+    name: 'sid',
+    rolling: true,
+    proxy: true,
+    cookie: {
+      httpOnly: true,
+      sameSite: isCrossSiteDeployment ? 'none' : 'lax',
+      secure: isCrossSiteDeployment ? 'auto' : false,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    },
+  };
 
-  app.use(
-    session({
-      secret: process.env.APP_SECRET as string,
-      resave: false,
-      saveUninitialized: false,
-      store: sessionStore,
-      name: 'sid',
-      rolling: true,
-      proxy: true,
-      cookie: {
-        httpOnly: true,
-        sameSite: isCrossSiteDeployment ? 'none' : 'lax',
-        secure: isCrossSiteDeployment ? 'auto' : false,
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      },
-    }),
-  );
+  if (sessionStore) {
+    sessionOptions.store = sessionStore;
+  }
+
+  app.use(session(sessionOptions));
 
   app.use(passport.initialize());
   app.use(passport.session());
