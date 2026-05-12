@@ -48,7 +48,7 @@ export function TopNav() {
               <Avatar className="h-8 w-8 cursor-pointer relative">
                 <AvatarFallback>
                   {currentUser?.firstName
-                    ? currentUser.firstName[0].toLocaleUpperCase()
+                    ? currentUser.firstName[0].toUpperCase()
                     : "U"}
                 </AvatarFallback>
                 <div

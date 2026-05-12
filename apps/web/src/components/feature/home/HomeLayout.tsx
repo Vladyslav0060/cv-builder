@@ -9,7 +9,7 @@ export const HomeLayout = () => {
       <div className="relative z-10 text-center px-6 space-y-6 max-w-2xl">
         <div className="flex justify-center">
           <div className="p-4 rounded-2xl bg-muted border border-border shadow-lg">
-            <Sparkles className="h-8 w-8 text-emerald 500 dark:text-emerald-400" />
+            <Sparkles className="h-8 w-8 text-emerald-500 dark:text-emerald-400" />
           </div>
         </div>
         <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
