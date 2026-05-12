@@ -6,4 +6,6 @@ export const ROUTES = {
   PROFILE: "/profile",
   NEW_DOCUMENT: "/new-document",
   DOCUMENTS: "/documents",
+  RESUME: "/documents/resume",
+  COVER_LETTER: "/documents/cover-letter",
 };

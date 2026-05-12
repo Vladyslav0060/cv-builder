@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node ../../scripts/sync-resume-constructor-layout.mjs",
     "dev": "next dev",
+    "prebuild": "node ../../scripts/sync-resume-constructor-layout.mjs",
     "build": "npm run gen:api && next build",
     "start": "next start",
     "lint": "eslint",

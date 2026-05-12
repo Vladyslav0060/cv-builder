@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Post,
+  StreamableFile,
   Session,
 } from '@nestjs/common';
 import { DocumentService } from './document.service';
@@ -20,6 +21,8 @@ import { GetDocumentsPreviewDto } from './dto/get-documents-preview.dto';
 import { GetDocumentDto } from './dto/get-document.dto';
 import { toGetDocumentDto } from './mappers/get-document.mapper';
 import { DocumentType } from 'generated/prisma/enums';
+import { createResumeConstructorPdfBuffer } from './document-pdf';
+import { type ResumeExportPayload } from '../shared/resume-constructor-data';
 
 function getDocumentTypeLabel(type: DocumentType) {
   return type === 'RESUME' ? 'resume' : 'cover letter';
@@ -32,6 +35,29 @@ export class DocumentController {
     private userService: UserService,
     private aiService: AiService,
   ) {}
+
+  @Post('resume/pdf')
+  @ApiBody({
+    schema: {
+      type: 'object',
+    },
+  })
+  async exportResumePdf(@Body() payload: ResumeExportPayload) {
+    const pdfBuffer = await createResumeConstructorPdfBuffer(
+      payload.resume,
+      payload.template,
+      payload.colorScheme,
+    );
+    const filename = `${payload.resume.personalInfo.fullName || 'resume'}.pdf`
+      .replace(/[^\w.-]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+
+    return new StreamableFile(pdfBuffer, {
+      disposition: `attachment; filename="${filename}"`,
+      type: 'application/pdf',
+    });
+  }
+
   @Get(':documentId')
   @ApiParam({ name: 'documentId', example: '1', required: true })
   @ApiOkResponse({ type: GetDocumentDto })
@@ -96,29 +122,33 @@ export class DocumentController {
       ? buildApplicantInfo(applicantSource)
       : '';
 
-    const systemPrompt =
-      creationMode === CreateDocumentDtoCreationMode.ACCOUNT
-        ? `You are an expert career coach. Write a professional ${
-            getDocumentTypeLabel(type)
-          } using the applicant's details and tailoring it to the job description. Keep formatting clean and professional. Use ${maxOutputTokens} tokens max.`
-        : `You are an expert career coach. Write a professional ${
-            getDocumentTypeLabel(type)
-          } from scratch using the job brief. Keep formatting clean and professional. Use ${maxOutputTokens} tokens max.`;
+    let documentContent = '';
 
-    const userPrompt = [
-      applicantInfo || null,
-      `Job Posting:
+    if (type === 'COVER_LETTER') {
+      const systemPrompt =
+        creationMode === CreateDocumentDtoCreationMode.ACCOUNT
+          ? `You are an expert career coach. Write a professional ${getDocumentTypeLabel(
+              type,
+            )} using the applicant's details and tailoring it to the job description. Keep formatting clean and professional. Use ${maxOutputTokens} tokens max.`
+          : `You are an expert career coach. Write a professional ${getDocumentTypeLabel(
+              type,
+            )} from scratch using the job brief. Keep formatting clean and professional. Use ${maxOutputTokens} tokens max.`;
+
+      const userPrompt = [
+        applicantInfo || null,
+        `Job Posting:
 Title: ${jobTitle}
 Company: ${company}
 Description: ${description}`,
-    ]
-      .filter(Boolean)
-      .join('\n\n');
-    const response = await this.aiService.ask(userId, userPrompt, {
-      system: systemPrompt,
-      maxOutputTokens,
-    });
-    const documentContent = response.text;
+      ]
+        .filter(Boolean)
+        .join('\n\n');
+      const response = await this.aiService.ask(userId, userPrompt, {
+        system: systemPrompt,
+        maxOutputTokens,
+      });
+      documentContent = response.text;
+    }
 
     const document = await this.documentService.createDocument(
       session.passport.user,
