@@ -45,7 +45,7 @@ import {
   type ResumeTemplateId,
 } from "@/shared/resume-constructor-data";
 
-import { PreviewSurface, ResumePdfPreview } from "./ResumePdfPreview";
+import { ResumePdfPreview } from "./ResumePdfPreview";
 
 function createId(prefix: string) {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`}`;
@@ -414,14 +414,14 @@ export function ResumeConstructor() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)]">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)]">
       <Container
-        variant="fullMobileConstrainedBreakpointPadded"
-        className="grid flex-1 min-h-0 w-full max-w-none grid-rows-[auto,1fr] px-0 py-6"
+        variant="constrainedBreakpointPadded"
+        className="grid h-full flex-1 min-h-0 grid-rows-[auto,1fr] px-0 py-6"
       >
-        <div className="grid min-h-0 min-w-0 gap-6 xl:grid-cols-[minmax(0,0.80fr)_minmax(420px,1.20fr)]">
-          <section className="space-y-6">
-            <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <div className="grid min-h-0 min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_clamp(340px,30vw,460px)]">
+          <section className="flex min-h-0 min-w-0 flex-col overflow-hidden">
+            <div className="shrink-0 mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div className="space-y-2">
                 <Badge variant="outline" className="w-fit">
                   Resume constructor
@@ -439,320 +439,328 @@ export function ResumeConstructor() {
                 </div>
               </div>
             </div>
-            <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
-              <CardHeader className="border-b border-border/50 pb-4">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <LayoutTemplate className="size-4" />
-                  Layout and palette
-                </CardTitle>
-                <CardDescription>
-                  Switch between two professional templates and update the
-                  accent color family.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-5 pt-4">
-                <Tabs
-                  value={template}
-                  onValueChange={(value) =>
-                    setTemplate(value as ResumeTemplateId)
-                  }
-                >
-                  <TabsList className="grid w-full grid-cols-2">
-                    {resumeTemplates.map((option) => (
-                      <TabsTrigger key={option.id} value={option.id}>
-                        {option.label}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                  {resumeTemplates.map((option) => (
-                    <TabsContent
-                      key={option.id}
-                      value={option.id}
-                      className="mt-3"
+
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-2">
+              <div className="space-y-6">
+                <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
+                  <CardHeader className="border-b border-border/50 pb-4">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <LayoutTemplate className="size-4" />
+                      Layout and palette
+                    </CardTitle>
+                    <CardDescription>
+                      Switch between two professional templates and update the
+                      accent color family.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-5 pt-4">
+                    <Tabs
+                      value={template}
+                      onValueChange={(value) =>
+                        setTemplate(value as ResumeTemplateId)
+                      }
                     >
-                      <div className="rounded-xl border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
-                        {option.description}
-                      </div>
-                    </TabsContent>
-                  ))}
-                </Tabs>
-
-                <Field label="Color scheme">
-                  <Select
-                    value={colorScheme}
-                    onValueChange={(value) =>
-                      setColorScheme(value as ResumeColorSchemeId)
-                    }
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Choose a color scheme" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {resumeColorSchemes.map((scheme) => (
-                        <SelectItem key={scheme.id} value={scheme.id}>
-                          {scheme.label}
-                        </SelectItem>
+                      <TabsList className="grid w-full grid-cols-2">
+                        {resumeTemplates.map((option) => (
+                          <TabsTrigger key={option.id} value={option.id}>
+                            {option.label}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                      {resumeTemplates.map((option) => (
+                        <TabsContent
+                          key={option.id}
+                          value={option.id}
+                          className="mt-3"
+                        >
+                          <div className="rounded-xl border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
+                            {option.description}
+                          </div>
+                        </TabsContent>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </CardContent>
-            </Card>
+                    </Tabs>
 
-            <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
-              <CardHeader className="border-b border-border/50 pb-4">
-                <CardTitle className="text-base">
-                  Personal information
-                </CardTitle>
-                <CardDescription>
-                  Used for the header, contact row, and linked metadata.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4 pt-4 md:grid-cols-2">
-                <Field label="Full name">
-                  <Input
-                    value={resume.personalInfo.fullName}
-                    onChange={(event) =>
-                      setPersonalInfo("fullName", event.target.value)
-                    }
-                  />
-                </Field>
-                <Field label="Headline">
-                  <Input
-                    value={resume.personalInfo.title}
-                    onChange={(event) =>
-                      setPersonalInfo("title", event.target.value)
-                    }
-                  />
-                </Field>
-                <Field label="Email">
-                  <Input
-                    value={resume.personalInfo.email}
-                    onChange={(event) =>
-                      setPersonalInfo("email", event.target.value)
-                    }
-                  />
-                </Field>
-                <Field label="Phone">
-                  <Input
-                    value={resume.personalInfo.phone ?? ""}
-                    onChange={(event) =>
-                      setPersonalInfo("phone", event.target.value)
-                    }
-                  />
-                </Field>
-                <Field label="Location">
-                  <Input
-                    value={resume.personalInfo.location ?? ""}
-                    onChange={(event) =>
-                      setPersonalInfo("location", event.target.value)
-                    }
-                  />
-                </Field>
-                <Field label="Website">
-                  <Input
-                    value={resume.personalInfo.website ?? ""}
-                    onChange={(event) =>
-                      setPersonalInfo("website", event.target.value)
-                    }
-                  />
-                </Field>
-                <Field label="LinkedIn">
-                  <Input
-                    value={resume.personalInfo.linkedin ?? ""}
-                    onChange={(event) =>
-                      setPersonalInfo("linkedin", event.target.value)
-                    }
-                  />
-                </Field>
-                <Field label="GitHub">
-                  <Input
-                    value={resume.personalInfo.github ?? ""}
-                    onChange={(event) =>
-                      setPersonalInfo("github", event.target.value)
-                    }
-                  />
-                </Field>
-              </CardContent>
-            </Card>
+                    <Field label="Color scheme">
+                      <Select
+                        value={colorScheme}
+                        onValueChange={(value) =>
+                          setColorScheme(value as ResumeColorSchemeId)
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Choose a color scheme" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {resumeColorSchemes.map((scheme) => (
+                            <SelectItem key={scheme.id} value={scheme.id}>
+                              {scheme.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </CardContent>
+                </Card>
 
-            <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
-              <CardHeader className="border-b border-border/50 pb-4">
-                <CardTitle className="text-base">Summary</CardTitle>
-                <CardDescription>
-                  One concise paragraph that frames the profile.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <Textarea
-                  value={resume.summary ?? ""}
-                  onChange={(event) =>
-                    setResume((current) => ({
-                      ...current,
-                      summary: event.target.value,
-                    }))
-                  }
-                  placeholder="Experienced product designer with a track record of..."
-                  className="min-h-28"
-                />
-              </CardContent>
-            </Card>
+                <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
+                  <CardHeader className="border-b border-border/50 pb-4">
+                    <CardTitle className="text-base">
+                      Personal information
+                    </CardTitle>
+                    <CardDescription>
+                      Used for the header, contact row, and linked metadata.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="grid gap-4 pt-4 md:grid-cols-2">
+                    <Field label="Full name">
+                      <Input
+                        value={resume.personalInfo.fullName}
+                        onChange={(event) =>
+                          setPersonalInfo("fullName", event.target.value)
+                        }
+                      />
+                    </Field>
+                    <Field label="Headline">
+                      <Input
+                        value={resume.personalInfo.title}
+                        onChange={(event) =>
+                          setPersonalInfo("title", event.target.value)
+                        }
+                      />
+                    </Field>
+                    <Field label="Email">
+                      <Input
+                        value={resume.personalInfo.email}
+                        onChange={(event) =>
+                          setPersonalInfo("email", event.target.value)
+                        }
+                      />
+                    </Field>
+                    <Field label="Phone">
+                      <Input
+                        value={resume.personalInfo.phone ?? ""}
+                        onChange={(event) =>
+                          setPersonalInfo("phone", event.target.value)
+                        }
+                      />
+                    </Field>
+                    <Field label="Location">
+                      <Input
+                        value={resume.personalInfo.location ?? ""}
+                        onChange={(event) =>
+                          setPersonalInfo("location", event.target.value)
+                        }
+                      />
+                    </Field>
+                    <Field label="Website">
+                      <Input
+                        value={resume.personalInfo.website ?? ""}
+                        onChange={(event) =>
+                          setPersonalInfo("website", event.target.value)
+                        }
+                      />
+                    </Field>
+                    <Field label="LinkedIn">
+                      <Input
+                        value={resume.personalInfo.linkedin ?? ""}
+                        onChange={(event) =>
+                          setPersonalInfo("linkedin", event.target.value)
+                        }
+                      />
+                    </Field>
+                    <Field label="GitHub">
+                      <Input
+                        value={resume.personalInfo.github ?? ""}
+                        onChange={(event) =>
+                          setPersonalInfo("github", event.target.value)
+                        }
+                      />
+                    </Field>
+                  </CardContent>
+                </Card>
 
-            <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
-              <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border/50 pb-4">
-                <div>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <BriefcaseBusiness className="size-4" />
-                    Experience
-                  </CardTitle>
-                  <CardDescription>
-                    Highlight impact, scope, and progression.
-                  </CardDescription>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addExperience}
-                >
-                  <Plus className="size-4" />
-                  Add role
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-4">
-                {resume.experience.map((entry) => (
-                  <ResumeEntryCard
-                    key={entry.id}
-                    entry={entry}
+                <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
+                  <CardHeader className="border-b border-border/50 pb-4">
+                    <CardTitle className="text-base">Summary</CardTitle>
+                    <CardDescription>
+                      One concise paragraph that frames the profile.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <Textarea
+                      value={resume.summary ?? ""}
+                      onChange={(event) =>
+                        setResume((current) => ({
+                          ...current,
+                          summary: event.target.value,
+                        }))
+                      }
+                      placeholder="Experienced product designer with a track record of..."
+                      className="min-h-28"
+                    />
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
+                  <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border/50 pb-4">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <BriefcaseBusiness className="size-4" />
+                        Experience
+                      </CardTitle>
+                      <CardDescription>
+                        Highlight impact, scope, and progression.
+                      </CardDescription>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addExperience}
+                    >
+                      <Plus className="size-4" />
+                      Add role
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-4">
+                    {resume.experience.map((entry) => (
+                      <ResumeEntryCard
+                        key={entry.id}
+                        entry={entry}
+                        onChange={(next) =>
+                          setResume((current) => ({
+                            ...current,
+                            experience: updateExperience(
+                              current.experience,
+                              entry.id,
+                              () => next,
+                            ),
+                          }))
+                        }
+                        onRemove={() =>
+                          setResume((current) => ({
+                            ...current,
+                            experience: current.experience.filter(
+                              (item) => item.id !== entry.id,
+                            ),
+                          }))
+                        }
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
+                  <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border/50 pb-4">
+                    <div>
+                      <CardTitle className="text-base">Education</CardTitle>
+                      <CardDescription>
+                        Keep it short and professional.
+                      </CardDescription>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addEducation}
+                    >
+                      <Plus className="size-4" />
+                      Add degree
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-4">
+                    {resume.education.map((entry) => (
+                      <EducationEntryCard
+                        key={entry.id}
+                        entry={entry}
+                        onChange={(next) =>
+                          setResume((current) => ({
+                            ...current,
+                            education: updateEducation(
+                              current.education,
+                              entry.id,
+                              () => next,
+                            ),
+                          }))
+                        }
+                        onRemove={() =>
+                          setResume((current) => ({
+                            ...current,
+                            education: current.education.filter(
+                              (item) => item.id !== entry.id,
+                            ),
+                          }))
+                        }
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <ListEditor
+                    label="Skills"
+                    icon={
+                      <Badge variant="secondary" className="h-6 gap-1.5 px-2">
+                        <span>01</span>
+                      </Badge>
+                    }
+                    values={resume.skills}
+                    onChange={(next) =>
+                      setResume((current) => ({ ...current, skills: next }))
+                    }
+                    placeholder="Strategic storytelling"
+                  />
+
+                  <ListEditor
+                    label="Languages"
+                    icon={
+                      <Languages className="size-4 text-muted-foreground" />
+                    }
+                    values={resume.languages ?? []}
                     onChange={(next) =>
                       setResume((current) => ({
                         ...current,
-                        experience: updateExperience(
-                          current.experience,
-                          entry.id,
-                          () => next,
-                        ),
+                        languages: next,
                       }))
                     }
-                    onRemove={() =>
-                      setResume((current) => ({
-                        ...current,
-                        experience: current.experience.filter(
-                          (item) => item.id !== entry.id,
-                        ),
-                      }))
-                    }
+                    placeholder="English"
                   />
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
-              <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border/50 pb-4">
-                <div>
-                  <CardTitle className="text-base">Education</CardTitle>
-                  <CardDescription>
-                    Keep it short and professional.
-                  </CardDescription>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addEducation}
-                >
-                  <Plus className="size-4" />
-                  Add degree
-                </Button>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-4">
-                {resume.education.map((entry) => (
-                  <EducationEntryCard
-                    key={entry.id}
-                    entry={entry}
-                    onChange={(next) =>
-                      setResume((current) => ({
-                        ...current,
-                        education: updateEducation(
-                          current.education,
-                          entry.id,
-                          () => next,
-                        ),
-                      }))
-                    }
-                    onRemove={() =>
-                      setResume((current) => ({
-                        ...current,
-                        education: current.education.filter(
-                          (item) => item.id !== entry.id,
-                        ),
-                      }))
-                    }
-                  />
-                ))}
-              </CardContent>
-            </Card>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <ListEditor
-                label="Skills"
-                icon={
-                  <Badge variant="secondary" className="h-6 gap-1.5 px-2">
-                    <span>01</span>
-                  </Badge>
-                }
-                values={resume.skills}
-                onChange={(next) =>
-                  setResume((current) => ({ ...current, skills: next }))
-                }
-                placeholder="Strategic storytelling"
-              />
-
-              <ListEditor
-                label="Languages"
-                icon={<Languages className="size-4 text-muted-foreground" />}
-                values={resume.languages ?? []}
-                onChange={(next) =>
-                  setResume((current) => ({ ...current, languages: next }))
-                }
-                placeholder="English"
-              />
+              </div>
             </div>
           </section>
 
-          <section className="relative min-w-0 w-full">
-            <div className="sticky top-0 h-[calc(100dvh-8rem)] w-full">
-              <div className="absolute inset-0 py-20">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary" className="gap-1.5">
-                    <LayoutTemplate className="size-3.5" />
-                    {template === "classic"
-                      ? "Classic sidebar"
-                      : "Modern editorial"}
-                  </Badge>
-                  <Badge
-                    variant="outline"
-                    className="gap-1.5"
-                    style={{
-                      borderColor: selectedScheme.border,
-                      color: selectedScheme.accent,
-                    }}
-                  >
-                    <span
-                      className="size-2 rounded-full"
-                      style={{ backgroundColor: selectedScheme.accent }}
-                    />
-                    {selectedScheme.label}
-                  </Badge>
-                </div>
-                {/* <PreviewSurface
-                  resume={resume}
-                  template={template}
-                  colorScheme={colorScheme}
-                /> */}
+          <section className="sticky top-0 flex h-full min-h-0 min-w-0 self-stretch">
+            <div className="flex h-full min-h-0 w-full flex-col">
+              <div className="shrink-0 flex flex-wrap items-center gap-2 pb-4">
+                <Badge variant="secondary" className="gap-1.5">
+                  <LayoutTemplate className="size-3.5" />
+                  {template === "classic"
+                    ? "Classic sidebar"
+                    : "Modern editorial"}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="gap-1.5"
+                  style={{
+                    borderColor: selectedScheme.border,
+                    color: selectedScheme.accent,
+                  }}
+                >
+                  <span
+                    className="size-2 rounded-full"
+                    style={{ backgroundColor: selectedScheme.accent }}
+                  />
+                  {selectedScheme.label}
+                </Badge>
               </div>
+              {/* <PreviewSurface
+                resume={resume}
+                template={template}
+                colorScheme={colorScheme}
+              /> */}
               <ResumePdfPreview
-                className="w-full overflow-hidden"
+                className="min-h-0 flex-1 w-full overflow-hidden"
                 resume={resume}
                 template={template}
                 colorScheme={colorScheme}

@@ -1,7 +1,14 @@
 "use client";
 
 import { Download, LoaderCircle } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +26,9 @@ import {
   RESUME_PREVIEW_PADDING_PX,
   resumeConstructorLayout,
 } from "@/shared/resume-constructor-layout";
+
+const PREVIEW_MAGNIFIER_SCALE = 2.2;
+const PREVIEW_MAGNIFIER_SIZE_PX = 240;
 
 function useElementSize<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);
@@ -109,6 +119,22 @@ function PageFrame({ theme, children }: { theme: Theme; children: ReactNode }) {
     >
       {children}
     </div>
+  );
+}
+
+function ResumePreviewPage({
+  resume,
+  template,
+  theme,
+}: {
+  resume: ResumeData;
+  template: ResumeTemplateId;
+  theme: Theme;
+}) {
+  return template === "classic" ? (
+    <ClassicPreview resume={resume} theme={theme} />
+  ) : (
+    <ModernPreview resume={resume} theme={theme} />
   );
 }
 
@@ -756,6 +782,7 @@ export function PreviewSurface({
 }) {
   const theme = getTheme(colorScheme);
   const { ref, size } = useElementSize<HTMLDivElement>();
+  const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
 
   const scale = useMemo(() => {
     if (!size.width || !size.height) {
@@ -778,10 +805,88 @@ export function PreviewSurface({
     );
   }, [size.height, size.width]);
 
+  const magnifiedScale = scale * PREVIEW_MAGNIFIER_SCALE;
+  let magnifier: ReactNode = null;
+
+  const updatePointer = (
+    event: ReactPointerEvent<HTMLDivElement>,
+    options?: { reset?: boolean },
+  ) => {
+    if (options?.reset) {
+      setPointer(null);
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    setPointer({
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    });
+  };
+
+  if (pointer) {
+    const pageWidth = RESUME_A4_WIDTH_PX * scale;
+    const pageHeight = RESUME_A4_HEIGHT_PX * scale;
+    const pageLeft = (size.width - pageWidth) / 2;
+    const pageTop = (size.height - pageHeight) / 2;
+    const localX = pointer.x - pageLeft;
+    const localY = pointer.y - pageTop;
+    const isInsidePage =
+      localX >= 0 && localY >= 0 && localX <= pageWidth && localY <= pageHeight;
+
+    if (isInsidePage) {
+      magnifier = (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute z-10 rounded-full border border-white/75 bg-white/10 shadow-[0_18px_48px_rgba(15,23,42,0.24)] backdrop-blur-[2px]"
+          style={{
+            width: PREVIEW_MAGNIFIER_SIZE_PX,
+            height: PREVIEW_MAGNIFIER_SIZE_PX,
+            left: Math.min(
+              Math.max(pointer.x + 24, 12),
+              Math.max(size.width - PREVIEW_MAGNIFIER_SIZE_PX - 12, 12),
+            ),
+            top: Math.min(
+              Math.max(pointer.y + 24, 12),
+              Math.max(size.height - PREVIEW_MAGNIFIER_SIZE_PX - 12, 12),
+            ),
+          }}
+        >
+          <div className="absolute inset-0 overflow-hidden rounded-full">
+            <div
+              style={{
+                width: RESUME_A4_WIDTH_PX,
+                height: RESUME_A4_HEIGHT_PX,
+                transform: `translate(${
+                  PREVIEW_MAGNIFIER_SIZE_PX / 2 -
+                  localX * PREVIEW_MAGNIFIER_SCALE
+                }px, ${
+                  PREVIEW_MAGNIFIER_SIZE_PX / 2 -
+                  localY * PREVIEW_MAGNIFIER_SCALE
+                }px) scale(${magnifiedScale})`,
+                transformOrigin: "top left",
+              }}
+            >
+              <ResumePreviewPage
+                resume={resume}
+                template={template}
+                theme={theme}
+              />
+            </div>
+          </div>
+          <div className="absolute inset-0 rounded-full ring-1 ring-black/5" />
+        </div>
+      );
+    }
+  }
+
   return (
     <div
       ref={ref}
-      className="flex h-full min-h-0 w-full flex-1 overflow-hidden"
+      className="relative flex h-full min-h-0 w-full flex-1 overflow-hidden"
+      onPointerEnter={updatePointer}
+      onPointerMove={updatePointer}
+      onPointerLeave={(event) => updatePointer(event, { reset: true })}
     >
       <div className="flex h-full w-full items-center justify-center overflow-hidden">
         <div
@@ -799,14 +904,16 @@ export function PreviewSurface({
               transformOrigin: "top left",
             }}
           >
-            {template === "classic" ? (
-              <ClassicPreview resume={resume} theme={theme} />
-            ) : (
-              <ModernPreview resume={resume} theme={theme} />
-            )}
+            <ResumePreviewPage
+              resume={resume}
+              template={template}
+              theme={theme}
+            />
           </div>
         </div>
       </div>
+
+      {magnifier}
     </div>
   );
 }
@@ -829,7 +936,7 @@ export function ResumePdfPreview({
   return (
     <Card
       className={cn(
-        "flex min-h-0 h-[calc(100vh-8rem)] flex-col border-border/60 bg-linear-to-b from-slate-100/80 to-slate-200/70 shadow-sm backdrop-blur",
+        "flex h-full min-h-0 flex-col border-border/60 bg-linear-to-b from-slate-100/80 to-slate-200/70 shadow-sm backdrop-blur",
         className,
       )}
     >
