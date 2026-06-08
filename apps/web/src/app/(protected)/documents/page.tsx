@@ -76,7 +76,7 @@ export default function Documents() {
     : "—";
 
   return (
-    <div className="relative min-h-full overflow-hidden">
+    <div className="relative min-h-full overflow-hidden pb-14">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-64" />
 
       <PageBreadcrumbs

@@ -30,7 +30,7 @@ export function TopNav() {
     currentUser?.profileFilledPercentage < 40;
 
   return (
-    <header className="relative w-full top-0 z-50 border-b bg-background/60 backdrop-blur">
+    <header className="relative w-full top-0 z-50 border-b border-border/60 bg-background/70 backdrop-blur-md">
       <Container
         variant={"fullMobileConstrainedBreakpointPadded"}
         paddingY="none"

@@ -18,7 +18,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Container } from "@/components/ui/container";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -414,13 +413,10 @@ export function ResumeConstructor() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.12),_transparent_28%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)]">
-      <Container
-        variant="constrainedBreakpointPadded"
-        className="grid h-full flex-1 min-h-0 grid-rows-[auto,1fr] px-0 py-6"
-      >
-        <div className="grid min-h-0 min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_clamp(340px,30vw,460px)]">
-          <section className="flex min-h-0 min-w-0 flex-col overflow-hidden">
+    <div className="flex min-h-screen flex-col overflow-x-hidden">
+      <div className="mx-auto grid min-h-full w-full min-w-0 max-w-screen-xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_clamp(340px,30vw,460px)] xl:items-start">
+          <section className="flex min-w-0 flex-col">
             <div className="shrink-0 mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div className="space-y-2">
                 <Badge variant="outline" className="w-fit">
@@ -440,7 +436,7 @@ export function ResumeConstructor() {
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-2">
+            <div>
               <div className="space-y-6">
                 <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
                   <CardHeader className="border-b border-border/50 pb-4">
@@ -730,8 +726,8 @@ export function ResumeConstructor() {
             </div>
           </section>
 
-          <section className="sticky top-0 flex h-full min-h-0 min-w-0 self-stretch">
-            <div className="flex h-full min-h-0 w-full flex-col">
+          <section className="flex min-w-0 self-start xl:w-[clamp(340px,30vw,460px)] xl:shrink-0">
+            <div className="flex w-full flex-col xl:sticky xl:top-32 xl:h-[calc(100dvh-11rem)]">
               <div className="shrink-0 flex flex-wrap items-center gap-2 pb-4">
                 <Badge variant="secondary" className="gap-1.5">
                   <LayoutTemplate className="size-3.5" />
@@ -760,7 +756,7 @@ export function ResumeConstructor() {
                 colorScheme={colorScheme}
               /> */}
               <ResumePdfPreview
-                className="min-h-0 flex-1 w-full overflow-hidden"
+                className="h-full w-full overflow-hidden"
                 resume={resume}
                 template={template}
                 colorScheme={colorScheme}
@@ -770,7 +766,7 @@ export function ResumeConstructor() {
             </div>
           </section>
         </div>
-      </Container>
+      </div>
     </div>
   );
 }
