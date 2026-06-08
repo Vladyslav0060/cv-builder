@@ -18,7 +18,7 @@ export const DocumentPage = ({
   const { data: document } = useGetDocument(documentId);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col pb-14">
       <PageBreadcrumbs
         items={[
           { href: ROUTES.HOME, title: "Home" },
