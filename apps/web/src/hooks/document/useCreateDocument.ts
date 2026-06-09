@@ -12,7 +12,9 @@ export const useCreateDocument = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      router.push(`${ROUTES.DOCUMENTS}/${data.id}`);
+      const base =
+        data.type === "RESUME" ? ROUTES.RESUME : ROUTES.COVER_LETTER;
+      router.push(`${base}/${data.id}`);
     },
     onError: (error) => {
       console.error(error);

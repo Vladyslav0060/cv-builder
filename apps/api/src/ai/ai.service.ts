@@ -8,6 +8,31 @@ type AskOptions = {
   highQuality?: boolean;
 };
 
+export type AiResumeResult = {
+  title?: string;
+  summary?: string;
+  skills?: string[];
+  languages?: string[];
+  experience?: Array<{
+    id: string;
+    company: string;
+    position: string;
+    location?: string;
+    startDate: string;
+    endDate?: string | null;
+    isCurrent?: boolean;
+    description: string[];
+  }>;
+  education?: Array<{
+    id: string;
+    school: string;
+    degree: string;
+    field?: string;
+    startDate: string;
+    endDate?: string | null;
+  }>;
+};
+
 @Injectable()
 export class AiService {
   constructor(
@@ -66,5 +91,49 @@ export class AiService {
         model,
       };
     });
+  }
+
+  async generateResume(
+    userId: string,
+    applicantInfo: string,
+    job: { title: string; company: string; description: string },
+  ): Promise<AiResumeResult> {
+    const systemPrompt = `You are an expert resume writer. Generate a tailored resume in JSON format.
+Return ONLY a valid JSON object — no markdown, no code fences, no explanation.
+Use this exact schema:
+{
+  "title": "professional title matching the job",
+  "summary": "2-4 sentence professional summary tailored to the job",
+  "skills": ["skill1", "skill2"],
+  "languages": ["language1"],
+  "experience": [
+    {"id":"exp-1","company":"","position":"","location":"","startDate":"","endDate":"","isCurrent":false,"description":["bullet point"]}
+  ],
+  "education": [
+    {"id":"edu-1","school":"","degree":"","field":"","startDate":"","endDate":""}
+  ]
+}
+Parse the applicant's experience and education from their profile text and structure them into the arrays above. Tailor descriptions to highlight relevance to the job. Use empty arrays if no data is available.`;
+
+    const userPrompt = [
+      applicantInfo || null,
+      `Target Job:\nTitle: ${job.title}\nCompany: ${job.company}\nDescription: ${job.description}`,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+    const result = await this.ask(userId, userPrompt, {
+      system: systemPrompt,
+      maxOutputTokens: 2000,
+    });
+
+    const jsonMatch = result.text.trim().match(/\{[\s\S]*\}/);
+    if (!jsonMatch) return {};
+
+    try {
+      return JSON.parse(jsonMatch[0]) as AiResumeResult;
+    } catch {
+      return {};
+    }
   }
 }

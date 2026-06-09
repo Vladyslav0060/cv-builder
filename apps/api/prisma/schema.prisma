@@ -91,11 +91,39 @@ model Document {
   id        String   @id @default(cuid())
   title     String
   type      DocumentType
-  content   String
+  content   String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume    Resume?
+}
+
+model Resume {
+  id          String   @id @default(cuid())
+  documentId  String   @unique
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  fullName    String
+  title       String
+  email       String
+  phone       String?
+  location    String?
+  website     String?
+  linkedin    String?
+  github      String?
+  summary     String?
+
+  skills      String[]
+  languages   String[]
+  experience  Json
+  education   Json
+
+  template    String?
+  colorScheme String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model AiRequestUsage {

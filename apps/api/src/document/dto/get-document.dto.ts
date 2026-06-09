@@ -15,9 +15,9 @@ export class GetDocumentDto {
   @IsString()
   id: string;
 
-  @ApiProperty()
+  @ApiProperty({ nullable: true, type: String })
   @IsString()
-  content: string;
+  content: string | null;
 
   @ApiProperty()
   createdAt: Date;

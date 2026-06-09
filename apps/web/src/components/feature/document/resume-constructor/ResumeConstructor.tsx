@@ -30,7 +30,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { useEnrichedMe } from "@/hooks/auth/useEnrichedMe";
 import { useDownloadResumePdf } from "@/hooks/document/useDownloadResumePdf";
+import { useGetResume } from "@/hooks/document/useGetResume";
+import { useSaveResume } from "@/hooks/document/useSaveResume";
 
 import {
   defaultResumeData,
@@ -345,10 +348,49 @@ function EducationEntryCard({
   );
 }
 
-export function ResumeConstructor() {
+export function ResumeConstructor({ documentId }: { documentId?: string } = {}) {
+  const { data: existingResume } = useGetResume(documentId ?? "");
+  console.log({existingResume})
+  const { data: userProfile } = useEnrichedMe();
+  const { mutate: saveResume, isPending: isSavingResume } = useSaveResume(
+    documentId ?? "",
+  );
+
   const [resume, setResume] = useState<ResumeData>(defaultResumeData);
   const [template, setTemplate] = useState<ResumeTemplateId>("classic");
   const [colorScheme, setColorScheme] = useState<ResumeColorSchemeId>("slate");
+  const [appliedResume, setAppliedResume] = useState<ResumeExportPayload | null>(null);
+  const [profileApplied, setProfileApplied] = useState(false);
+
+  if (existingResume && existingResume !== appliedResume) {
+    setAppliedResume(existingResume);
+    setResume(existingResume.resume);
+    setTemplate(existingResume.template ?? "classic");
+    setColorScheme(existingResume.colorScheme ?? "slate");
+  }
+
+  if (existingResume === null && !profileApplied && userProfile) {
+    setProfileApplied(true);
+    const fullName = [userProfile.firstName, userProfile.lastName]
+      .filter(Boolean)
+      .join(" ");
+    const location = [userProfile.city, userProfile.state, userProfile.country]
+      .filter(Boolean)
+      .join(", ");
+    setResume((prev) => ({
+      ...prev,
+      personalInfo: {
+        ...prev.personalInfo,
+        ...(fullName && { fullName }),
+        email: userProfile.email,
+        ...(userProfile.phone && { phone: userProfile.phone }),
+        ...(location && { location }),
+        ...(userProfile.portfolio && { website: userProfile.portfolio }),
+        ...(userProfile.linkedIn && { linkedin: userProfile.linkedIn }),
+      },
+    }));
+  }
+
   const exportPayload = useMemo<ResumeExportPayload>(
     () => ({ resume, template, colorScheme }),
     [resume, template, colorScheme],
@@ -434,6 +476,15 @@ export function ResumeConstructor() {
                   </p>
                 </div>
               </div>
+              {documentId ? (
+                <Button
+                  type="button"
+                  onClick={() => saveResume(exportPayload)}
+                  disabled={isSavingResume}
+                >
+                  {isSavingResume ? "Saving..." : "Save resume"}
+                </Button>
+              ) : null}
             </div>
 
             <div>

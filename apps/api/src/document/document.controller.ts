@@ -15,11 +15,13 @@ import {
 } from './dto/create-document.dto';
 import { UserService } from 'src/user/user.service';
 import { buildApplicantInfo } from 'src/ai/utils';
-import { AiService } from 'src/ai/ai.service';
+import { AiService, AiResumeResult } from 'src/ai/ai.service';
 import { toGetDocumentsPreviewDto } from './mappers/get-documents.mapper';
 import { GetDocumentsPreviewDto } from './dto/get-documents-preview.dto';
 import { GetDocumentDto } from './dto/get-document.dto';
 import { toGetDocumentDto } from './mappers/get-document.mapper';
+import { toResumeExportPayload } from './mappers/resume.mapper';
+import { ResumeExportPayloadDto } from './dto/resume-data.dto';
 import { DocumentType } from 'generated/prisma/enums';
 import { createResumeConstructorPdfBuffer } from './document-pdf';
 import { type ResumeExportPayload } from '../shared/resume-constructor-data';
@@ -56,6 +58,39 @@ export class DocumentController {
       disposition: `attachment; filename="${filename}"`,
       type: 'application/pdf',
     });
+  }
+
+  @Get('resume/:documentId')
+  @ApiParam({ name: 'documentId', example: '1', required: true })
+  @ApiOkResponse({ type: ResumeExportPayloadDto })
+  async getResumeData(
+    @Session() session: any,
+    @Param('documentId') documentId: string,
+  ) {
+    const resume = await this.documentService.getResumeByDocumentId(
+      session.passport.user,
+      documentId,
+    );
+
+    return resume ? toResumeExportPayload(resume) : null;
+  }
+
+  @Post('resume/:documentId')
+  @ApiParam({ name: 'documentId', example: '1', required: true })
+  @ApiBody({ type: ResumeExportPayloadDto })
+  @ApiOkResponse({ type: ResumeExportPayloadDto })
+  async saveResumeData(
+    @Session() session: any,
+    @Param('documentId') documentId: string,
+    @Body() body: ResumeExportPayloadDto,
+  ) {
+    const resume = await this.documentService.upsertResume(
+      session.passport.user,
+      documentId,
+      body as ResumeExportPayload,
+    );
+
+    return toResumeExportPayload(resume);
   }
 
   @Get(':documentId')
@@ -122,7 +157,7 @@ export class DocumentController {
       ? buildApplicantInfo(applicantSource)
       : '';
 
-    let documentContent = '';
+    let documentContent: string | null = null;
 
     if (type === 'COVER_LETTER') {
       const systemPrompt =
@@ -150,11 +185,58 @@ Description: ${description}`,
       documentContent = response.text;
     }
 
-    const document = await this.documentService.createDocument(
-      session.passport.user,
-      body,
-      documentContent,
-    );
+    const [document, aiResumeData] = await Promise.all([
+      this.documentService.createDocument(session.passport.user, body, documentContent),
+      type === 'RESUME' && applicantSource && applicantInfo
+        ? this.aiService
+            .generateResume(userId, applicantInfo, { title: jobTitle, company, description })
+            .catch((err) => {
+              console.error('[createDocument] generateResume failed:', err?.message ?? err);
+              return null as AiResumeResult | null;
+            })
+        : Promise.resolve(null as AiResumeResult | null),
+    ]);
+
+    if (type === 'RESUME' && applicantSource && document) {
+      const fullName = [applicantSource.firstName, applicantSource.lastName]
+        .filter(Boolean)
+        .join(' ');
+      const location = [
+        applicantSource.city,
+        applicantSource.state,
+        applicantSource.country,
+      ]
+        .filter(Boolean)
+        .join(', ');
+      const fallbackSkills = applicantSource.skills
+        ? applicantSource.skills.split(/[,\n]+/).map((s) => s.trim()).filter(Boolean)
+        : [];
+
+      await this.documentService.upsertResume(userId, document!.id, {
+        resume: {
+          personalInfo: {
+            fullName,
+            title: aiResumeData?.title ?? jobTitle,
+            email: applicantSource.email ?? '',
+            ...(applicantSource.phone && { phone: applicantSource.phone }),
+            ...(location && { location }),
+            ...(applicantSource.portfolio && { website: applicantSource.portfolio }),
+            ...(applicantSource.linkedIn && { linkedin: applicantSource.linkedIn }),
+          },
+          summary: aiResumeData?.summary ?? applicantSource.summary ?? undefined,
+          experience: (aiResumeData?.experience ?? []).map((exp) => ({
+            ...exp,
+            endDate: exp.endDate ?? undefined,
+          })),
+          education: (aiResumeData?.education ?? []).map((edu) => ({
+            ...edu,
+            endDate: edu.endDate ?? undefined,
+          })),
+          skills: aiResumeData?.skills ?? fallbackSkills,
+          languages: aiResumeData?.languages ?? [],
+        },
+      });
+    }
 
     return toGetDocumentDto(document);
   }

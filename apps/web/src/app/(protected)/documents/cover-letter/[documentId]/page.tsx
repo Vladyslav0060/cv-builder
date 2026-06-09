@@ -35,7 +35,7 @@ export const DocumentPage = ({
             Loading document...
           </div>
         ) : document ? (
-          <Editor initialMarkdown={document.content} />
+          <Editor initialMarkdown={document.content ?? undefined} />
         ) : (
           <div className="min-h-[600px] p-4 text-sm text-muted-foreground">
             Document could not be loaded.
