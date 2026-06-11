@@ -5,7 +5,7 @@ import { NewDocumentForm } from "../../../components/feature/document/NewDocumen
 
 export default function Page() {
   return (
-    <Container variant="narrowConstrainedPadded">
+    <Container variant="constrainedBreakpointPadded" className="pt-8">
       <PageBreadcrumbs
         items={[
           { href: ROUTES.HOME, title: "Home" },

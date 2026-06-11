@@ -6,6 +6,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -20,17 +21,19 @@ export function WizardStepPanel({
   step,
   control,
   disabled,
+  footer,
 }: {
   step: WizardStep;
   control: Control<NewDocumentWizardValues>;
   disabled: boolean;
+  footer?: React.ReactNode;
 }) {
   if (step.kind === "message") {
     return (
       <WizardStepMessage
         title={step.title}
         description={step.description}
-        continueLabel={step.continueLabel}
+        footer={footer}
       />
     );
   }
@@ -57,6 +60,9 @@ export function WizardStepPanel({
           </div>
         </FieldGroup>
       </CardContent>
+      {footer ? (
+        <CardFooter className="justify-between gap-3">{footer}</CardFooter>
+      ) : null}
     </Card>
   );
 }
