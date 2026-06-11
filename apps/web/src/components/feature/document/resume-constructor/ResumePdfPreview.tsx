@@ -1232,7 +1232,7 @@ export function ResumePdfPreview({
   return (
     <Card
       className={cn(
-        "flex h-full min-h-0 flex-col border-border/60 bg-linear-to-b from-slate-100/80 to-slate-200/70 shadow-sm backdrop-blur",
+        "flex h-full min-h-0 flex-col border-border/60 bg-linear-to-b from-slate-100/80 to-slate-200/70 shadow-sm backdrop-blur dark:from-slate-800/60 dark:to-slate-900/60",
         className,
       )}
     >
@@ -1264,7 +1264,7 @@ export function ResumePdfPreview({
             colorScheme={colorScheme}
           />
         ) : (
-          <div className="flex min-h-[72vh] items-center justify-center bg-slate-100/70 p-6 text-sm text-muted-foreground">
+          <div className="flex min-h-[72vh] items-center justify-center bg-slate-100/70 p-6 text-sm text-muted-foreground dark:bg-slate-900/40">
             Rendering preview...
           </div>
         )}
