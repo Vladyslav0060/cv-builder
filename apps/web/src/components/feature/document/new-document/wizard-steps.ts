@@ -99,6 +99,18 @@ export const educationAndStrengthFields: WizardFieldConfig[] = [
     placeholder: "Awards, promotions, published work, measurable results.",
     multiline: true,
   },
+  {
+    name: "projects",
+    label: "Projects",
+    placeholder: "Notable projects, side work, or portfolio pieces with links and tech used.",
+    multiline: true,
+  },
+  {
+    name: "certifications",
+    label: "Certifications",
+    placeholder: "Certifications or licenses, with the issuing organization and year.",
+    multiline: true,
+  },
 ];
 
 export const documentBriefFields: WizardFieldConfig[] = [

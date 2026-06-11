@@ -17,6 +17,8 @@ export function toEnrichedUserDto(user: EnrichedUser): EnrichedUserDto {
     user.experience,
     user.education,
     user.achievements,
+    user.projects,
+    user.certifications,
     user.summary,
     user.portfolio,
   ];
@@ -51,6 +53,8 @@ export function toEnrichedUserDto(user: EnrichedUser): EnrichedUserDto {
     experience: user.experience ?? '',
     education: user.education ?? '',
     achievements: user.achievements ?? '',
+    projects: user.projects ?? '',
+    certifications: user.certifications ?? '',
     summary: user.summary ?? '',
     portfolio: user.portfolio ?? '',
     createdAt: user.createdAt,

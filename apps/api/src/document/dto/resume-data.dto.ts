@@ -125,6 +125,61 @@ export class ResumeEducationDto {
   endDate?: string;
 }
 
+export class ResumeProjectDto {
+  @ApiProperty()
+  @IsString()
+  id: string;
+
+  @ApiProperty()
+  @IsString()
+  name: string;
+
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  description: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  technologies?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  link?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  endDate?: string;
+}
+
+export class ResumeCertificationDto {
+  @ApiProperty()
+  @IsString()
+  id: string;
+
+  @ApiProperty()
+  @IsString()
+  name: string;
+
+  @ApiProperty()
+  @IsString()
+  issuer: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  date?: string;
+}
+
 export class ResumeDataDto {
   @ApiProperty({ type: ResumePersonalInfoDto })
   @ValidateNested()
@@ -158,6 +213,20 @@ export class ResumeDataDto {
   @IsArray()
   @IsString({ each: true })
   languages?: string[];
+
+  @ApiPropertyOptional({ type: [ResumeProjectDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ResumeProjectDto)
+  projects?: ResumeProjectDto[];
+
+  @ApiPropertyOptional({ type: [ResumeCertificationDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ResumeCertificationDto)
+  certifications?: ResumeCertificationDto[];
 }
 
 export class ResumeExportPayloadDto {

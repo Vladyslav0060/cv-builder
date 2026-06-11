@@ -234,6 +234,11 @@ Description: ${description}`,
           })),
           skills: aiResumeData?.skills ?? fallbackSkills,
           languages: aiResumeData?.languages ?? [],
+          projects: (aiResumeData?.projects ?? []).map((project) => ({
+            ...project,
+            endDate: project.endDate ?? undefined,
+          })),
+          certifications: aiResumeData?.certifications ?? [],
         },
       });
     }

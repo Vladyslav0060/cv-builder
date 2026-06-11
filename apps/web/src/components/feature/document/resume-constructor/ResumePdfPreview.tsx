@@ -159,7 +159,7 @@ function ClassicPreview({
           }}
         >
           <div
-            className="space-y-4"
+            className="space-y-5"
             style={{
               paddingLeft: classic.sidebarPaddingHorizontalPx,
               paddingRight: classic.sidebarPaddingHorizontalPx,
@@ -167,7 +167,7 @@ function ClassicPreview({
               paddingBottom: classic.sidebarPaddingVerticalPx,
             }}
           >
-            <div className="mb-6">
+            <div className="mb-7">
               <h2
                 className="font-bold leading-[1.05]"
                 style={{
@@ -189,7 +189,7 @@ function ClassicPreview({
               </p>
             </div>
 
-            <section className="space-y-2">
+            <section className="space-y-3">
               <h3
                 className="font-bold uppercase"
                 style={{
@@ -223,7 +223,7 @@ function ClassicPreview({
               </div>
             </section>
 
-            <section className="space-y-2">
+            <section className="space-y-3">
               <h3
                 className="font-bold uppercase"
                 style={{
@@ -234,7 +234,7 @@ function ClassicPreview({
               >
                 Skills
               </h3>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {resume.skills.filter(Boolean).map((skill) => (
                   <span
                     key={skill}
@@ -256,7 +256,7 @@ function ClassicPreview({
             </section>
 
             {resume.languages?.length ? (
-              <section className="space-y-2">
+              <section className="space-y-3">
                 <h3
                   className="font-bold uppercase"
                   style={{
@@ -267,7 +267,7 @@ function ClassicPreview({
                 >
                   Languages
                 </h3>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-2">
                   {resume.languages.filter(Boolean).map((language) => (
                     <span
                       key={language}
@@ -290,7 +290,7 @@ function ClassicPreview({
             ) : null}
 
             {!!resume.education.length ? (
-              <section className="space-y-2">
+              <section className="space-y-3">
                 <h3
                   className="font-bold uppercase"
                   style={{
@@ -301,7 +301,7 @@ function ClassicPreview({
                 >
                   Education
                 </h3>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {resume.education.map((education) => (
                     <div key={education.id} className="space-y-0.5">
                       <p
@@ -331,6 +331,44 @@ function ClassicPreview({
                 </div>
               </section>
             ) : null}
+
+            {!!resume.certifications?.length ? (
+              <section className="space-y-3">
+                <h3
+                  className="font-bold uppercase"
+                  style={{
+                    color: theme.accent,
+                    fontSize: classic.sectionTitleFontSizePx,
+                    letterSpacing: classic.sectionTitleLetterSpacingPx,
+                  }}
+                >
+                  Certifications
+                </h3>
+                <div className="space-y-3">
+                  {resume.certifications.map((certification) => (
+                    <div key={certification.id} className="space-y-0.5">
+                      <p
+                        className="font-bold"
+                        style={{
+                          fontSize: classic.certificationTitleFontSizePx,
+                        }}
+                      >
+                        {certification.name}
+                      </p>
+                      <p
+                        className="text-slate-600"
+                        style={{
+                          fontSize: classic.certificationMetaFontSizePx,
+                        }}
+                      >
+                        {certification.issuer}
+                        {certification.date ? ` · ${certification.date}` : ""}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </div>
         </aside>
 
@@ -344,7 +382,7 @@ function ClassicPreview({
           }}
         >
           {resume.summary ? (
-            <section className="space-y-2">
+            <section className="space-y-3">
               <h3
                 className="font-bold uppercase"
                 style={{
@@ -368,13 +406,13 @@ function ClassicPreview({
 
           {resume.summary ? (
             <div
-              className="my-4 border-t"
+              className="my-5 border-t"
               style={{ borderTopColor: theme.border }}
             />
           ) : null}
 
           {!!resume.experience.length ? (
-            <section className="space-y-2">
+            <section className="space-y-3">
               <h3
                 className="font-bold uppercase"
                 style={{
@@ -385,7 +423,7 @@ function ClassicPreview({
               >
                 Experience
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {resume.experience.map((experience, index) => (
                   <div key={experience.id}>
                     <div className="mb-1 flex items-start justify-between gap-3">
@@ -418,7 +456,7 @@ function ClassicPreview({
                         {experience.location ? `\n${experience.location}` : ""}
                       </p>
                     </div>
-                    <ul className="space-y-1">
+                    <ul className="space-y-1.5">
                       {experience.description.filter(Boolean).map((item) => (
                         <li
                           key={item}
@@ -437,7 +475,111 @@ function ClassicPreview({
                     </ul>
                     {index < resume.experience.length - 1 ? (
                       <div
-                        className="my-3 border-t"
+                        className="my-4 border-t"
+                        style={{ borderTopColor: theme.border }}
+                      />
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {!!resume.projects?.length ? (
+            <section
+              className="space-y-3"
+              style={{ marginTop: classic.sectionTopMarginPx }}
+            >
+              <h3
+                className="font-bold uppercase"
+                style={{
+                  color: theme.accent,
+                  fontSize: classic.sectionTitleFontSizePx,
+                  letterSpacing: classic.sectionTitleLetterSpacingPx,
+                }}
+              >
+                Projects
+              </h3>
+              <div className="space-y-4">
+                {resume.projects.map((project, index) => (
+                  <div key={project.id}>
+                    <div className="mb-1 flex items-start justify-between gap-3">
+                      <h4
+                        className="font-bold"
+                        style={{ fontSize: classic.projectTitleFontSizePx }}
+                      >
+                        {project.name}
+                      </h4>
+                      {project.startDate || project.endDate ? (
+                        <p
+                          className="whitespace-pre-line text-right text-slate-600"
+                          style={{ fontSize: classic.projectMetaFontSizePx }}
+                        >
+                          {project.startDate
+                            ? formatDateRange(
+                                project.startDate,
+                                project.endDate,
+                              )
+                            : project.endDate}
+                        </p>
+                      ) : null}
+                    </div>
+                    {project.link ? (
+                      <p
+                        className="text-slate-600"
+                        style={{
+                          fontSize: classic.projectMetaFontSizePx,
+                          marginTop: classic.projectMetaTopMarginPx,
+                        }}
+                      >
+                        <a href={toHref(project.link)} className="hover:underline">
+                          {project.link}
+                        </a>
+                      </p>
+                    ) : null}
+                    <ul className="mt-1.5 space-y-1.5">
+                      {project.description.filter(Boolean).map((item) => (
+                        <li
+                          key={item}
+                          className="flex gap-2 leading-[1.34]"
+                          style={{ fontSize: classic.paragraphFontSizePx }}
+                        >
+                          <span
+                            className="mt-[2px]"
+                            style={{ color: theme.accent }}
+                          >
+                            •
+                          </span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {project.technologies?.length ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {project.technologies.map((tech) => (
+                          <span
+                            key={tech}
+                            className="rounded-full border"
+                            style={{
+                              borderColor: theme.border,
+                              backgroundColor: theme.paper,
+                              fontSize: classic.techChipFontSizePx,
+                              paddingLeft: classic.techChipHorizontalPaddingPx,
+                              paddingRight:
+                                classic.techChipHorizontalPaddingPx,
+                              paddingTop: classic.techChipVerticalPaddingPx,
+                              paddingBottom:
+                                classic.techChipVerticalPaddingPx,
+                            }}
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    {index < resume.projects!.length - 1 ? (
+                      <div
+                        className="my-4 border-t"
                         style={{ borderTopColor: theme.border }}
                       />
                     ) : null}
@@ -471,7 +613,7 @@ function ModernPreview({
           paddingLeft: modern.headerHorizontalPaddingPx,
           paddingRight: modern.headerHorizontalPaddingPx,
           paddingTop: modern.headerVerticalPaddingPx,
-          paddingBottom: 16,
+          paddingBottom: 18,
         }}
       >
         <div className="flex flex-col items-stretch">
@@ -498,7 +640,7 @@ function ModernPreview({
           </div>
 
           <div
-            className="mt-3 grid grid-cols-2 gap-y-1"
+            className="mt-4 grid grid-cols-2 gap-y-1.5"
             style={{
               columnGap: modern.contactGapPx,
               fontSize: modern.contactFontSizePx,
@@ -536,7 +678,7 @@ function ModernPreview({
       >
         {resume.summary ? (
           <section
-            className="mb-3 rounded-[10px] border px-3 py-3"
+            className="mb-4 rounded-[10px] border px-4 py-4"
             style={{ borderColor: theme.border }}
           >
             <h3
@@ -564,7 +706,7 @@ function ModernPreview({
             style={{ width: `${modern.leftColumnWidthPercent}%` }}
           >
             <section
-              className="mb-3 rounded-[10px] border px-3 py-3"
+              className="mb-4 rounded-[10px] border px-4 py-4"
               style={{ borderColor: theme.border }}
             >
               <h3
@@ -577,7 +719,7 @@ function ModernPreview({
               >
                 Skills
               </h3>
-              <div className="mt-2 flex flex-wrap gap-1.5">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {resume.skills.filter(Boolean).map((skill) => (
                   <span
                     key={skill}
@@ -600,7 +742,7 @@ function ModernPreview({
 
             {resume.languages?.length ? (
               <section
-                className="mb-3 rounded-[10px] border px-3 py-3"
+                className="mb-4 rounded-[10px] border px-4 py-4"
                 style={{ borderColor: theme.border }}
               >
                 <h3
@@ -613,7 +755,7 @@ function ModernPreview({
                 >
                   Languages
                 </h3>
-                <div className="mt-2 flex flex-wrap gap-1.5">
+                <div className="mt-3 flex flex-wrap gap-2">
                   {resume.languages.filter(Boolean).map((language) => (
                     <span
                       key={language}
@@ -637,7 +779,10 @@ function ModernPreview({
 
             {!!resume.education.length ? (
               <section
-                className="rounded-[10px] border px-3 py-3"
+                className={cn(
+                  "rounded-[10px] border px-4 py-4",
+                  resume.certifications?.length && "mb-4",
+                )}
                 style={{ borderColor: theme.border }}
               >
                 <h3
@@ -650,7 +795,7 @@ function ModernPreview({
                 >
                   Education
                 </h3>
-                <div className="mt-2 space-y-3">
+                <div className="mt-3 space-y-4">
                   {resume.education.map((education) => (
                     <div key={education.id}>
                       <p
@@ -680,6 +825,47 @@ function ModernPreview({
                 </div>
               </section>
             ) : null}
+
+            {!!resume.certifications?.length ? (
+              <section
+                className="rounded-[10px] border px-4 py-4"
+                style={{ borderColor: theme.border }}
+              >
+                <h3
+                  className="font-bold uppercase"
+                  style={{
+                    color: theme.accent,
+                    fontSize: modern.sectionTitleFontSizePx,
+                    letterSpacing: modern.sectionTitleLetterSpacingPx,
+                  }}
+                >
+                  Certifications
+                </h3>
+                <div className="mt-3 space-y-3">
+                  {resume.certifications.map((certification) => (
+                    <div key={certification.id}>
+                      <p
+                        className="font-bold"
+                        style={{
+                          fontSize: modern.certificationTitleFontSizePx,
+                        }}
+                      >
+                        {certification.name}
+                      </p>
+                      <p
+                        className="text-slate-600"
+                        style={{
+                          fontSize: modern.certificationMetaFontSizePx,
+                        }}
+                      >
+                        {certification.issuer}
+                        {certification.date ? ` · ${certification.date}` : ""}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </div>
 
           <div
@@ -688,7 +874,10 @@ function ModernPreview({
           >
             {!!resume.experience.length ? (
               <section
-                className="rounded-[10px] border px-3 py-3"
+                className={cn(
+                  "rounded-[10px] border px-4 py-4",
+                  resume.projects?.length && "mb-4",
+                )}
                 style={{ borderColor: theme.border }}
               >
                 <h3
@@ -701,7 +890,7 @@ function ModernPreview({
                 >
                   Experience
                 </h3>
-                <div className="mt-2 space-y-3">
+                <div className="mt-3 space-y-4">
                   {resume.experience.map((experience, index) => (
                     <div key={experience.id}>
                       <div className="mb-1 flex items-start justify-between gap-3">
@@ -736,7 +925,7 @@ function ModernPreview({
                             : ""}
                         </p>
                       </div>
-                      <ul className="space-y-1">
+                      <ul className="space-y-1.5">
                         {experience.description.filter(Boolean).map((item) => (
                           <li
                             key={item}
@@ -755,7 +944,114 @@ function ModernPreview({
                       </ul>
                       {index < resume.experience.length - 1 ? (
                         <div
-                          className="my-3 border-t"
+                          className="my-4 border-t"
+                          style={{ borderTopColor: theme.border }}
+                        />
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            {!!resume.projects?.length ? (
+              <section
+                className="rounded-[10px] border px-4 py-4"
+                style={{ borderColor: theme.border }}
+              >
+                <h3
+                  className="font-bold uppercase"
+                  style={{
+                    color: theme.accent,
+                    fontSize: modern.sectionTitleFontSizePx,
+                    letterSpacing: modern.sectionTitleLetterSpacingPx,
+                  }}
+                >
+                  Projects
+                </h3>
+                <div className="mt-3 space-y-4">
+                  {resume.projects.map((project, index) => (
+                    <div key={project.id}>
+                      <div className="mb-1 flex items-start justify-between gap-3">
+                        <h4
+                          className="font-bold"
+                          style={{ fontSize: modern.projectTitleFontSizePx }}
+                        >
+                          {project.name}
+                        </h4>
+                        {project.startDate || project.endDate ? (
+                          <p
+                            className="whitespace-pre-line text-right text-slate-600"
+                            style={{ fontSize: modern.projectMetaFontSizePx }}
+                          >
+                            {project.startDate
+                              ? formatDateRange(
+                                  project.startDate,
+                                  project.endDate,
+                                )
+                              : project.endDate}
+                          </p>
+                        ) : null}
+                      </div>
+                      {project.link ? (
+                        <p
+                          className="text-slate-600"
+                          style={{
+                            fontSize: modern.projectMetaFontSizePx,
+                            marginTop: modern.projectMetaTopMarginPx,
+                          }}
+                        >
+                          <a
+                            href={toHref(project.link)}
+                            className="hover:underline"
+                          >
+                            {project.link}
+                          </a>
+                        </p>
+                      ) : null}
+                      <ul className="mt-1.5 space-y-1.5">
+                        {project.description.filter(Boolean).map((item) => (
+                          <li
+                            key={item}
+                            className="flex gap-2 leading-[1.34]"
+                            style={{ fontSize: modern.paragraphFontSizePx }}
+                          >
+                            <span
+                              className="mt-[2px]"
+                              style={{ color: theme.accent }}
+                            >
+                              •
+                            </span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      {project.technologies?.length ? (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {project.technologies.map((tech) => (
+                            <span
+                              key={tech}
+                              className="rounded-md border"
+                              style={{
+                                borderColor: theme.border,
+                                backgroundColor: theme.accentMuted,
+                                fontSize: modern.techChipFontSizePx,
+                                paddingLeft: modern.techChipHorizontalPaddingPx,
+                                paddingRight:
+                                  modern.techChipHorizontalPaddingPx,
+                                paddingTop: modern.techChipVerticalPaddingPx,
+                                paddingBottom:
+                                  modern.techChipVerticalPaddingPx,
+                              }}
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                      {index < resume.projects!.length - 1 ? (
+                        <div
+                          className="my-4 border-t"
                           style={{ borderTopColor: theme.border }}
                         />
                       ) : null}

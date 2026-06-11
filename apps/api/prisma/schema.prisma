@@ -18,32 +18,34 @@ enum AuthProvider {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  avatarUrl String?
-  firstName String?
-  lastName  String?
-  address   String?
-  city      String?
-  state     String?
-  zip       String?
-  country   String?
-  phone     String?
-  linkedIn  String?
-  portfolio String?
-  summary   String?
-  skills    String?
-  experience String?
-  education String?
-  achievements String?
-  documents Document[]
-  role      String   @default("user")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  credential Credential?
+  id              String           @id @default(cuid())
+  email           String           @unique
+  avatarUrl       String?
+  firstName       String?
+  lastName        String?
+  address         String?
+  city            String?
+  state           String?
+  zip             String?
+  country         String?
+  phone           String?
+  linkedIn        String?
+  portfolio       String?
+  summary         String?
+  skills          String?
+  experience      String?
+  education       String?
+  achievements    String?
+  projects        String?
+  certifications  String?
+  documents       Document[]
+  role            String           @default("user")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  credential      Credential?
   aiRequestUsages AiRequestUsage[]
-  oauth      OAuthAccount[]
-  sessions   Session[]
+  oauth           OAuthAccount[]
+  sessions        Session[]
 }
 
 model Credential {
@@ -59,7 +61,7 @@ model OAuthAccount {
   id                String       @id @default(cuid())
   userId            String
   provider          AuthProvider
-  providerAccountId String       // google sub/id
+  providerAccountId String // google sub/id
   email             String?
   createdAt         DateTime     @default(now())
   user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -69,14 +71,14 @@ model OAuthAccount {
 }
 
 model Session {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   expiresAt DateTime
   revokedAt DateTime?
   ip        String?
   userAgent String?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
@@ -88,42 +90,44 @@ enum DocumentType {
 }
 
 model Document {
-  id        String   @id @default(cuid())
+  id        String       @id @default(cuid())
   title     String
   type      DocumentType
   content   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   resume    Resume?
 }
 
 model Resume {
-  id          String   @id @default(cuid())
-  documentId  String   @unique
-  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  documentId String   @unique
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
-  fullName    String
-  title       String
-  email       String
-  phone       String?
-  location    String?
-  website     String?
-  linkedin    String?
-  github      String?
-  summary     String?
+  fullName String
+  title    String
+  email    String
+  phone    String?
+  location String?
+  website  String?
+  linkedin String?
+  github   String?
+  summary  String?
 
-  skills      String[]
-  languages   String[]
-  experience  Json
-  education   Json
+  skills         String[]
+  languages      String[]
+  experience     Json
+  education      Json
+  projects       Json?
+  certifications Json?
 
   template    String?
   colorScheme String?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model AiRequestUsage {

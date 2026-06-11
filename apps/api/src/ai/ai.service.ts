@@ -31,6 +31,21 @@ export type AiResumeResult = {
     startDate: string;
     endDate?: string | null;
   }>;
+  projects?: Array<{
+    id: string;
+    name: string;
+    description: string[];
+    technologies?: string[];
+    link?: string;
+    startDate?: string;
+    endDate?: string | null;
+  }>;
+  certifications?: Array<{
+    id: string;
+    name: string;
+    issuer: string;
+    date?: string;
+  }>;
 };
 
 @Injectable()
@@ -111,9 +126,15 @@ Use this exact schema:
   ],
   "education": [
     {"id":"edu-1","school":"","degree":"","field":"","startDate":"","endDate":""}
+  ],
+  "projects": [
+    {"id":"proj-1","name":"","description":["bullet point"],"technologies":["tech1","tech2"],"link":"","startDate":"","endDate":""}
+  ],
+  "certifications": [
+    {"id":"cert-1","name":"","issuer":"","date":""}
   ]
 }
-Parse the applicant's experience and education from their profile text and structure them into the arrays above. Tailor descriptions to highlight relevance to the job. Use empty arrays if no data is available.`;
+Parse the applicant's experience, education, projects, and certifications from their profile text and structure them into the arrays above. Tailor descriptions to highlight relevance to the job. Only include projects/certifications the applicant actually mentions — do not invent them. Use empty arrays if no data is available.`;
 
     const userPrompt = [
       applicantInfo || null,
@@ -124,7 +145,7 @@ Parse the applicant's experience and education from their profile text and struc
 
     const result = await this.ask(userId, userPrompt, {
       system: systemPrompt,
-      maxOutputTokens: 2000,
+      maxOutputTokens: 2800,
     });
 
     const jsonMatch = result.text.trim().match(/\{[\s\S]*\}/);

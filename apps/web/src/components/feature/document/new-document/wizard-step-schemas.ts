@@ -48,6 +48,8 @@ export const accountStrengthsStepSchema = z.object({
   education: z.string().trim().min(1, "Add your education."),
   skills: z.string().trim().min(1, "Add your skills."),
   achievements: z.string().trim().optional(),
+  projects: z.string().trim().optional(),
+  certifications: z.string().trim().optional(),
 });
 
 export { scratchBackgroundStepSchema, scratchIdentityStepSchema };
@@ -93,6 +95,8 @@ export const wizardResolverSchema = z
     education: z.string().trim().optional(),
     skills: z.string().trim().optional(),
     achievements: z.string().trim().optional(),
+    projects: z.string().trim().optional(),
+    certifications: z.string().trim().optional(),
     jobTitle: z.string().trim().optional(),
     company: z.string().trim().optional(),
     description: z.string().trim().optional(),
@@ -138,6 +142,7 @@ export const wizardDefaultValues = {
   address: "",
   achievements: "",
   avatarUrl: "",
+  certifications: "",
   city: "",
   company: "",
   country: "",
@@ -152,6 +157,7 @@ export const wizardDefaultValues = {
   linkedIn: "",
   phone: "",
   portfolio: "",
+  projects: "",
   skills: "",
   state: "",
   summary: "",

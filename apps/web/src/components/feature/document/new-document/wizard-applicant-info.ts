@@ -12,6 +12,7 @@ export type WizardApplicantInfoValues = {
   address?: string;
   achievements?: string;
   avatarUrl?: string;
+  certifications?: string;
   city?: string;
   country?: string;
   education?: string;
@@ -22,6 +23,7 @@ export type WizardApplicantInfoValues = {
   linkedIn?: string;
   phone?: string;
   portfolio?: string;
+  projects?: string;
   skills?: string;
   state?: string;
   summary?: string;
@@ -79,6 +81,18 @@ export const applicantBackgroundFields = [
     placeholder: "Awards, promotions, published work, measurable results.",
     multiline: true,
   },
+  {
+    name: "projects",
+    label: "Projects",
+    placeholder: "Notable projects, side work, or portfolio pieces with links and tech used.",
+    multiline: true,
+  },
+  {
+    name: "certifications",
+    label: "Certifications",
+    placeholder: "Certifications or licenses, with the issuing organization and year.",
+    multiline: true,
+  },
 ] as const;
 
 export const scratchIdentityStepSchema = z.object({
@@ -108,6 +122,8 @@ export const scratchBackgroundStepSchema = z.object({
   education: z.string().trim().optional(),
   skills: z.string().trim().min(1, "Add your skills."),
   achievements: z.string().trim().optional(),
+  projects: z.string().trim().optional(),
+  certifications: z.string().trim().optional(),
 });
 
 export function buildApplicantInfoPayload(
@@ -117,6 +133,7 @@ export function buildApplicantInfoPayload(
     address: trimOrUndefined(values.address),
     achievements: trimOrUndefined(values.achievements),
     avatarUrl: trimOrUndefined(values.avatarUrl),
+    certifications: trimOrUndefined(values.certifications),
     city: trimOrUndefined(values.city),
     country: trimOrUndefined(values.country),
     education: trimOrUndefined(values.education),
@@ -127,6 +144,7 @@ export function buildApplicantInfoPayload(
     linkedIn: trimOrUndefined(values.linkedIn),
     phone: trimOrUndefined(values.phone),
     portfolio: trimOrUndefined(values.portfolio),
+    projects: trimOrUndefined(values.projects),
     skills: trimOrUndefined(values.skills),
     state: trimOrUndefined(values.state),
     summary: trimOrUndefined(values.summary),

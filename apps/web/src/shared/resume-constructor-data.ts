@@ -29,6 +29,23 @@ export type ResumeEducation = {
   endDate?: string;
 };
 
+export type ResumeProject = {
+  id: string;
+  name: string;
+  description: string[];
+  technologies?: string[];
+  link?: string;
+  startDate?: string;
+  endDate?: string;
+};
+
+export type ResumeCertification = {
+  id: string;
+  name: string;
+  issuer: string;
+  date?: string;
+};
+
 export type ResumeData = {
   personalInfo: ResumePersonalInfo;
   summary?: string;
@@ -36,6 +53,8 @@ export type ResumeData = {
   education: ResumeEducation[];
   skills: string[];
   languages?: string[];
+  projects?: ResumeProject[];
+  certifications?: ResumeCertification[];
 };
 
 export type ResumeExportPayload = {
@@ -180,4 +199,32 @@ export const defaultResumeData: ResumeData = {
     "Figma",
   ],
   languages: ["English", "German", "Polish"],
+  projects: [
+    {
+      id: "proj-1",
+      name: "Design System Overhaul",
+      description: [
+        "Rebuilt the company-wide component library in Figma and React, cutting design-to-dev handoff time by 40%.",
+        "Established accessibility guidelines adopted across 5 product teams.",
+      ],
+      technologies: ["Figma", "React", "Storybook"],
+      link: "alexjohnson.design/projects/design-system",
+      startDate: "2023",
+      endDate: "2024",
+    },
+  ],
+  certifications: [
+    {
+      id: "cert-1",
+      name: "Certified Usability Analyst",
+      issuer: "Human Factors International",
+      date: "2022",
+    },
+    {
+      id: "cert-2",
+      name: "Professional Scrum Product Owner I",
+      issuer: "Scrum.org",
+      date: "2021",
+    },
+  ],
 };

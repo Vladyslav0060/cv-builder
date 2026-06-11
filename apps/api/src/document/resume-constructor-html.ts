@@ -167,8 +167,81 @@ function renderExperience(resume: ResumeData, theme: Theme) {
     .join("");
 }
 
+function renderProjects(
+  resume: ResumeData,
+  theme: Theme,
+  variant: "classic" | "modern",
+) {
+  const projects = resume.projects ?? [];
+  const chipClass =
+    variant === "modern" ? "tech-chip tech-chip--modern" : "tech-chip";
+
+  return projects
+    .map((project) => {
+      const dateRange = project.startDate
+        ? formatDateRange(project.startDate, project.endDate)
+        : project.endDate;
+
+      return `
+        <div class="project-item">
+          <div class="role-row">
+            <div class="role-heading">
+              <div class="project-title">${escapeHtml(project.name)}</div>
+            </div>
+            ${dateRange ? `<div class="role-meta">${escapeHtml(dateRange)}</div>` : ""}
+          </div>
+          ${
+            project.link
+              ? `<div class="project-meta"><a class="project-link" href="${escapeHtml(toHref(project.link))}">${escapeHtml(project.link)}</a></div>`
+              : ""
+          }
+          <ul class="bullets">
+            ${project.description
+              .filter(Boolean)
+              .map(
+                (item) => `
+                  <li class="bullet-row">
+                    <span class="bullet" style="color:${theme.accent}">•</span>
+                    <span class="bullet-text">${escapeHtml(item)}</span>
+                  </li>
+                `,
+              )
+              .join("")}
+          </ul>
+          ${
+            project.technologies?.length
+              ? `<div class="tech-chips">${project.technologies
+                  .map(
+                    (tech) =>
+                      `<span class="${chipClass}" style="border-color:${theme.border};background:${theme.accentMuted};">${escapeHtml(tech)}</span>`,
+                  )
+                  .join("")}</div>`
+              : ""
+          }
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderCertifications(resume: ResumeData) {
+  return (resume.certifications ?? [])
+    .map(
+      (certification) => `
+        <div class="certification-item">
+          <div class="certification-title">${escapeHtml(certification.name)}</div>
+          <div class="certification-meta">${escapeHtml(certification.issuer)}${
+            certification.date ? ` · ${escapeHtml(certification.date)}` : ""
+          }</div>
+        </div>
+      `,
+    )
+    .join("");
+}
+
 function buildBaseStyles(theme: Theme) {
   const modern = resumeConstructorLayout.modern;
+  const classic = resumeConstructorLayout.classic;
 
   return `
     @page {
@@ -227,12 +300,12 @@ function buildBaseStyles(theme: Theme) {
     }
 
     .section-title {
-      margin: 0 0 8px 0;
+      margin: 0 0 10px 0;
       color: ${theme.accent};
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1.15px;
-      font-size: 9px;
+      font-size: 10px;
     }
 
     .name {
@@ -244,17 +317,17 @@ function buildBaseStyles(theme: Theme) {
     }
 
     .title {
-      margin: 4px 0 0 0;
+      margin: 5px 0 0 0;
       color: ${theme.accent};
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1.2px;
-      font-size: 9.5px;
+      font-size: 10.5px;
     }
 
     .contact-list {
-      margin-top: 14px;
-      font-size: 8.2px;
+      margin-top: 18px;
+      font-size: 9px;
       line-height: 1.35;
     }
 
@@ -267,37 +340,37 @@ function buildBaseStyles(theme: Theme) {
       display: inline-block;
       border: 1px solid ${theme.border};
       border-radius: 999px;
-      padding: 4px 8px;
-      margin: 0 6px 6px 0;
-      font-size: 8.1px;
+      padding: 5px 9px;
+      margin: 0 7px 7px 0;
+      font-size: 8.8px;
       line-height: 1.2;
     }
 
     .chip--modern {
       border-radius: 8px;
-      font-size: 8.1px;
+      font-size: 8.8px;
     }
 
     .language {
       display: block;
-      font-size: 9.2px;
+      font-size: 9.5px;
       line-height: 1.35;
-      margin-bottom: 2px;
+      margin-bottom: 3px;
     }
 
     .education-item {
-      margin-bottom: 10px;
+      margin-bottom: 14px;
     }
 
     .education-title {
-      font-size: 9.6px;
+      font-size: 10.5px;
       font-weight: 700;
       line-height: 1.25;
     }
 
     .education-meta {
-      margin-top: 2px;
-      font-size: 8.15px;
+      margin-top: 3px;
+      font-size: 9px;
       line-height: 1.35;
       opacity: 0.82;
     }
@@ -307,7 +380,7 @@ function buildBaseStyles(theme: Theme) {
     }
 
     .experience-item--spaced {
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
 
     .role-row {
@@ -315,7 +388,7 @@ function buildBaseStyles(theme: Theme) {
       justify-content: space-between;
       align-items: flex-start;
       gap: 12px;
-      margin-bottom: 3px;
+      margin-bottom: 4px;
     }
 
     .role-heading {
@@ -324,15 +397,15 @@ function buildBaseStyles(theme: Theme) {
     }
 
     .role-title {
-      font-size: 11.1px;
+      font-size: 12.5px;
       font-weight: 700;
       line-height: 1.2;
     }
 
     .company {
-      margin-top: 2px;
+      margin-top: 3px;
       color: ${theme.accent};
-      font-size: 9.2px;
+      font-size: 10px;
       font-weight: 700;
       line-height: 1.2;
     }
@@ -342,7 +415,7 @@ function buildBaseStyles(theme: Theme) {
       white-space: pre-line;
       text-align: right;
       color: rgba(15, 23, 42, 0.72);
-      font-size: 8.2px;
+      font-size: 9px;
       line-height: 1.35;
       text-transform: uppercase;
       letter-spacing: 0.4px;
@@ -350,7 +423,7 @@ function buildBaseStyles(theme: Theme) {
 
     .bullets {
       list-style: none;
-      margin: 5px 0 0 0;
+      margin: 6px 0 0 0;
       padding: 0;
     }
 
@@ -358,17 +431,17 @@ function buildBaseStyles(theme: Theme) {
       display: flex;
       gap: 8px;
       align-items: flex-start;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       line-height: 1.34;
-      font-size: 9.3px;
+      font-size: 10.5px;
     }
 
     .bullet {
       display: inline-block;
-      width: 9px;
-      flex: 0 0 9px;
+      width: 10px;
+      flex: 0 0 10px;
       line-height: 1.3;
-      margin-top: 2px;
+      margin-top: 3px;
     }
 
     .bullet-text {
@@ -376,33 +449,100 @@ function buildBaseStyles(theme: Theme) {
       min-width: 0;
     }
 
+    .project-item {
+      margin-bottom: ${classic.projectItemBottomMarginPx}px;
+    }
+
+    .project-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .project-title {
+      font-size: ${classic.projectTitleFontSizePx}px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .project-meta {
+      margin-top: ${classic.projectMetaTopMarginPx}px;
+      font-size: ${classic.projectMetaFontSizePx}px;
+      line-height: 1.35;
+      opacity: 0.82;
+    }
+
+    .project-link {
+      display: block;
+      overflow-wrap: anywhere;
+    }
+
+    .tech-chip {
+      display: inline-block;
+      border: 1px solid ${theme.border};
+      border-radius: 999px;
+      padding: ${classic.techChipVerticalPaddingPx}px ${classic.techChipHorizontalPaddingPx}px;
+      margin: 0 ${classic.techChipRightMarginPx}px ${classic.techChipBottomMarginPx}px 0;
+      font-size: ${classic.techChipFontSizePx}px;
+      line-height: 1.2;
+    }
+
+    .tech-chip--modern {
+      border-radius: 8px;
+      padding: ${modern.techChipVerticalPaddingPx}px ${modern.techChipHorizontalPaddingPx}px;
+      margin: 0 ${modern.techChipRightMarginPx}px ${modern.techChipBottomMarginPx}px 0;
+    }
+
+    .tech-chips {
+      margin-top: ${classic.techChipTopMarginPx}px;
+    }
+
+    .certification-item {
+      margin-bottom: ${classic.certificationItemBottomMarginPx}px;
+    }
+
+    .certification-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .certification-title {
+      font-size: ${classic.certificationTitleFontSizePx}px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .certification-meta {
+      margin-top: ${classic.certificationMetaTopMarginPx}px;
+      font-size: ${classic.certificationMetaFontSizePx}px;
+      line-height: 1.35;
+      opacity: 0.82;
+    }
+
     .classic-sidebar {
-      width: 176px;
-      flex: 0 0 176px;
+      width: ${classic.sidebarWidthPx}px;
+      flex: 0 0 ${classic.sidebarWidthPx}px;
       background: ${theme.accentMuted};
       border-right: 1px solid ${theme.border};
-      padding: 24px 20px;
+      padding: ${classic.sidebarPaddingVerticalPx}px ${classic.sidebarPaddingHorizontalPx}px;
     }
 
     .classic-name-block {
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
 
     .classic-content {
       flex: 1 1 auto;
       min-width: 0;
-      padding: 24px;
+      padding: ${classic.contentPaddingVerticalPx}px ${classic.contentPaddingHorizontalPx}px;
     }
 
     .classic-divider {
       border-top: 1px solid ${theme.border};
-      margin: 10px 0;
+      margin: ${classic.dividerVerticalMarginPx}px 0;
     }
 
     .modern-header {
       background: ${theme.accentMuted};
       border-bottom: 1px solid ${theme.border};
-      padding: 24px 24px 16px;
+      padding: ${modern.headerVerticalPaddingPx}px ${modern.headerHorizontalPaddingPx}px 18px;
     }
 
     .modern-header-top {
@@ -414,9 +554,9 @@ function buildBaseStyles(theme: Theme) {
     .modern-contact-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 4px 12px;
-      margin-top: 12px;
-      font-size: 8.2px;
+      gap: 6px ${modern.contactGapPx}px;
+      margin-top: 14px;
+      font-size: 9px;
       line-height: 1.35;
     }
 
@@ -427,30 +567,30 @@ function buildBaseStyles(theme: Theme) {
     }
 
     .modern-summary {
-      margin-bottom: 12px;
+      margin-bottom: ${modern.introCardBottomMarginPx}px;
       background: #fff;
       border: 1px solid ${theme.border};
       border-radius: 10px;
-      padding: 12px;
+      padding: ${modern.introCardVerticalPaddingPx}px ${modern.introCardHorizontalPaddingPx}px;
     }
 
     .modern-summary p,
     .classic-summary p {
       margin: 0;
-      font-size: 9.3px;
+      font-size: 10.5px;
       line-height: 1.42;
     }
 
     .modern-left-col {
       width: ${modern.leftColumnWidthPercent}%;
       min-width: 0;
-      padding-right: 12px;
+      padding-right: 14px;
     }
 
     .modern-right-col {
       width: ${modern.rightColumnWidthPercent}%;
       min-width: 0;
-      padding-left: 12px;
+      padding-left: 14px;
     }
 
     .modern-card,
@@ -458,11 +598,11 @@ function buildBaseStyles(theme: Theme) {
       border: 1px solid ${theme.border};
       background: #fff;
       border-radius: 10px;
-      padding: 12px;
+      padding: ${modern.blockVerticalPaddingPx}px ${modern.blockHorizontalPaddingPx}px;
     }
 
     .modern-section {
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
     .modern-section:last-child,
@@ -471,7 +611,7 @@ function buildBaseStyles(theme: Theme) {
     }
 
     .classic-section {
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
   `;
 }
@@ -515,6 +655,13 @@ function renderClassicPage(resume: ResumeData, theme: Theme) {
           <h2 class="section-title" style="font-size:${classic.sectionTitleFontSizePx}px;letter-spacing:${classic.sectionTitleLetterSpacingPx}px;">Education</h2>
           ${renderEducation(resume)}
         </section>
+
+        ${resume.certifications?.length ? `
+          <section class="classic-section">
+            <h2 class="section-title" style="font-size:${classic.sectionTitleFontSizePx}px;letter-spacing:${classic.sectionTitleLetterSpacingPx}px;">Certifications</h2>
+            ${renderCertifications(resume)}
+          </section>
+        ` : ""}
       </aside>
 
       <main class="classic-content">
@@ -532,6 +679,13 @@ function renderClassicPage(resume: ResumeData, theme: Theme) {
           <h2 class="section-title" style="font-size:${classic.sectionTitleFontSizePx}px;letter-spacing:${classic.sectionTitleLetterSpacingPx}px;">Experience</h2>
           ${renderExperience(resume, theme)}
         </section>
+
+        ${resume.projects?.length ? `
+          <section class="classic-section">
+            <h2 class="section-title" style="font-size:${classic.sectionTitleFontSizePx}px;letter-spacing:${classic.sectionTitleLetterSpacingPx}px;">Projects</h2>
+            ${renderProjects(resume, theme, "classic")}
+          </section>
+        ` : ""}
       </main>
     </div>
   `;
@@ -580,6 +734,13 @@ function renderModernPage(resume: ResumeData, theme: Theme) {
             <h2 class="section-title">Education</h2>
             ${renderEducation(resume)}
           </section>
+
+          ${resume.certifications?.length ? `
+            <section class="modern-section modern-card">
+              <h2 class="section-title">Certifications</h2>
+              ${renderCertifications(resume)}
+            </section>
+          ` : ""}
         </div>
 
         <div class="modern-right-col">
@@ -587,6 +748,13 @@ function renderModernPage(resume: ResumeData, theme: Theme) {
             <h2 class="section-title">Experience</h2>
             ${renderExperience(resume, theme)}
           </section>
+
+          ${resume.projects?.length ? `
+            <section class="modern-section modern-card">
+              <h2 class="section-title">Projects</h2>
+              ${renderProjects(resume, theme, "modern")}
+            </section>
+          ` : ""}
         </div>
       </div>
     </div>

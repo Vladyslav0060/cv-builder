@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  Award,
   BriefcaseBusiness,
+  FolderGit2,
   LayoutTemplate,
   Languages,
   Plus,
@@ -37,6 +39,7 @@ import { useSaveResume } from "@/hooks/document/useSaveResume";
 
 import {
   defaultResumeData,
+  type ResumeCertification,
   type ResumeExportPayload,
   resumeColorSchemes,
   resumeTemplates,
@@ -44,6 +47,7 @@ import {
   type ResumeData,
   type ResumeEducation,
   type ResumeExperience,
+  type ResumeProject,
   type ResumeTemplateId,
 } from "@/shared/resume-constructor-data";
 
@@ -78,6 +82,66 @@ function updateEducation(
   updater: (entry: ResumeEducation) => ResumeEducation,
 ) {
   return list.map((entry) => (entry.id === id ? updater(entry) : entry));
+}
+
+function updateProject(
+  list: ResumeProject[],
+  id: string,
+  updater: (entry: ResumeProject) => ResumeProject,
+) {
+  return list.map((entry) => (entry.id === id ? updater(entry) : entry));
+}
+
+function updateCertification(
+  list: ResumeCertification[],
+  id: string,
+  updater: (entry: ResumeCertification) => ResumeCertification,
+) {
+  return list.map((entry) => (entry.id === id ? updater(entry) : entry));
+}
+
+function splitTags(value: string) {
+  return value
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+function tagsToText(tags: string[]) {
+  return tags.join(", ");
+}
+
+function TagsInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: string[];
+  onChange: (next: string[]) => void;
+  placeholder?: string;
+}) {
+  const [text, setText] = useState(() => tagsToText(value));
+  const lastEmitted = useRef(value);
+
+  useEffect(() => {
+    if (value === lastEmitted.current) return;
+    lastEmitted.current = value;
+    setText(tagsToText(value));
+  }, [value]);
+
+  return (
+    <Input
+      value={text}
+      placeholder={placeholder}
+      onChange={(event) => {
+        const next = event.target.value;
+        setText(next);
+        const tags = splitTags(next);
+        lastEmitted.current = tags;
+        onChange(tags);
+      }}
+    />
+  );
 }
 
 function Field({
@@ -348,6 +412,152 @@ function EducationEntryCard({
   );
 }
 
+function ProjectEntryCard({
+  entry,
+  onChange,
+  onRemove,
+}: {
+  entry: ResumeProject;
+  onChange: (next: ResumeProject) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <Card className="border-border/60 bg-card/70 shadow-sm">
+      <CardHeader className="flex-row items-start justify-between gap-3 border-b border-border/50 pb-4">
+        <div>
+          <CardTitle className="text-sm">
+            {entry.name || "New project"}
+          </CardTitle>
+          <CardDescription>{entry.link || "Link"}</CardDescription>
+        </div>
+        <Button type="button" variant="ghost" size="icon-sm" onClick={onRemove}>
+          <Trash2 className="size-4" />
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-4">
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Project name">
+            <Input
+              value={entry.name}
+              onChange={(event) =>
+                onChange({ ...entry, name: event.target.value })
+              }
+            />
+          </Field>
+          <Field label="Link">
+            <Input
+              value={entry.link ?? ""}
+              placeholder="github.com/you/project"
+              onChange={(event) =>
+                onChange({ ...entry, link: event.target.value })
+              }
+            />
+          </Field>
+          <Field label="Start date">
+            <Input
+              value={entry.startDate ?? ""}
+              placeholder="2023"
+              onChange={(event) =>
+                onChange({ ...entry, startDate: event.target.value })
+              }
+            />
+          </Field>
+          <Field label="End date">
+            <Input
+              value={entry.endDate ?? ""}
+              placeholder="2024"
+              onChange={(event) =>
+                onChange({ ...entry, endDate: event.target.value })
+              }
+            />
+          </Field>
+        </div>
+
+        <Field label="Technologies">
+          <TagsInput
+            value={entry.technologies ?? []}
+            placeholder="React, TypeScript, Node.js"
+            onChange={(tags) =>
+              onChange({
+                ...entry,
+                technologies: tags,
+              })
+            }
+          />
+        </Field>
+
+        <Field label="Highlights">
+          <Textarea
+            value={linesToText(entry.description)}
+            placeholder={"One highlight per line"}
+            onChange={(event) =>
+              onChange({
+                ...entry,
+                description: splitLines(event.target.value),
+              })
+            }
+          />
+        </Field>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CertificationEntryCard({
+  entry,
+  onChange,
+  onRemove,
+}: {
+  entry: ResumeCertification;
+  onChange: (next: ResumeCertification) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <Card className="border-border/60 bg-card/70 shadow-sm">
+      <CardHeader className="flex-row items-start justify-between gap-3 border-b border-border/50 pb-4">
+        <div>
+          <CardTitle className="text-sm">
+            {entry.name || "New certification"}
+          </CardTitle>
+          <CardDescription>{entry.issuer || "Issuer"}</CardDescription>
+        </div>
+        <Button type="button" variant="ghost" size="icon-sm" onClick={onRemove}>
+          <Trash2 className="size-4" />
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4 pt-4">
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="Name">
+            <Input
+              value={entry.name}
+              onChange={(event) =>
+                onChange({ ...entry, name: event.target.value })
+              }
+            />
+          </Field>
+          <Field label="Issuer">
+            <Input
+              value={entry.issuer}
+              onChange={(event) =>
+                onChange({ ...entry, issuer: event.target.value })
+              }
+            />
+          </Field>
+          <Field label="Date">
+            <Input
+              value={entry.date ?? ""}
+              placeholder="2022"
+              onChange={(event) =>
+                onChange({ ...entry, date: event.target.value })
+              }
+            />
+          </Field>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function ResumeConstructor({ documentId }: { documentId?: string } = {}) {
   const { data: existingResume } = useGetResume(documentId ?? "");
   console.log({existingResume})
@@ -449,6 +659,39 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
           field: "",
           startDate: "",
           endDate: "",
+        },
+      ],
+    }));
+  };
+
+  const addProject = () => {
+    setResume((current) => ({
+      ...current,
+      projects: [
+        ...(current.projects ?? []),
+        {
+          id: createId("proj"),
+          name: "",
+          description: [""],
+          technologies: [],
+          link: "",
+          startDate: "",
+          endDate: "",
+        },
+      ],
+    }));
+  };
+
+  const addCertification = () => {
+    setResume((current) => ({
+      ...current,
+      certifications: [
+        ...(current.certifications ?? []),
+        {
+          id: createId("cert"),
+          name: "",
+          issuer: "",
+          date: "",
         },
       ],
     }));
@@ -700,6 +943,55 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
                 <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
                   <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border/50 pb-4">
                     <div>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <FolderGit2 className="size-4" />
+                        Projects
+                      </CardTitle>
+                      <CardDescription>
+                        Showcase work that demonstrates real-world impact.
+                      </CardDescription>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addProject}
+                    >
+                      <Plus className="size-4" />
+                      Add project
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-4">
+                    {(resume.projects ?? []).map((entry) => (
+                      <ProjectEntryCard
+                        key={entry.id}
+                        entry={entry}
+                        onChange={(next) =>
+                          setResume((current) => ({
+                            ...current,
+                            projects: updateProject(
+                              current.projects ?? [],
+                              entry.id,
+                              () => next,
+                            ),
+                          }))
+                        }
+                        onRemove={() =>
+                          setResume((current) => ({
+                            ...current,
+                            projects: (current.projects ?? []).filter(
+                              (item) => item.id !== entry.id,
+                            ),
+                          }))
+                        }
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
+                  <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border/50 pb-4">
+                    <div>
                       <CardTitle className="text-base">Education</CardTitle>
                       <CardDescription>
                         Keep it short and professional.
@@ -734,6 +1026,55 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
                           setResume((current) => ({
                             ...current,
                             education: current.education.filter(
+                              (item) => item.id !== entry.id,
+                            ),
+                          }))
+                        }
+                      />
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
+                  <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border/50 pb-4">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Award className="size-4" />
+                        Certifications
+                      </CardTitle>
+                      <CardDescription>
+                        Add credentials that build trust with recruiters.
+                      </CardDescription>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addCertification}
+                    >
+                      <Plus className="size-4" />
+                      Add certification
+                    </Button>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-4">
+                    {(resume.certifications ?? []).map((entry) => (
+                      <CertificationEntryCard
+                        key={entry.id}
+                        entry={entry}
+                        onChange={(next) =>
+                          setResume((current) => ({
+                            ...current,
+                            certifications: updateCertification(
+                              current.certifications ?? [],
+                              entry.id,
+                              () => next,
+                            ),
+                          }))
+                        }
+                        onRemove={() =>
+                          setResume((current) => ({
+                            ...current,
+                            certifications: (current.certifications ?? []).filter(
                               (item) => item.id !== entry.id,
                             ),
                           }))

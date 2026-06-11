@@ -20,6 +20,8 @@ type ApplicantInfoLike = Pick<
   | 'experience'
   | 'education'
   | 'achievements'
+  | 'projects'
+  | 'certifications'
 >;
 
 export const buildApplicantInfo = (userProfile: ApplicantInfoLike): string => {
@@ -50,6 +52,12 @@ ${userProfile?.education ?? ''}
 
 Achievements:
 ${userProfile?.achievements ?? ''}
+
+Projects:
+${userProfile?.projects ?? ''}
+
+Certifications:
+${userProfile?.certifications ?? ''}
 `.trim();
   return applicantInfo;
 };

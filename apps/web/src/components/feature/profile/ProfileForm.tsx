@@ -147,6 +147,8 @@ export const ProfileForm = () => {
       experience: "",
       education: "",
       achievements: "",
+      projects: "",
+      certifications: "",
     },
     mode: "onSubmit",
   });
@@ -172,6 +174,8 @@ export const ProfileForm = () => {
       experience: user.experience ?? "",
       education: user.education ?? "",
       achievements: user.achievements ?? "",
+      projects: user.projects ?? "",
+      certifications: user.certifications ?? "",
     });
   }, [user, form]);
 

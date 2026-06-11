@@ -88,6 +88,16 @@ export class DocumentApplicantInfoDto {
   @IsOptional()
   @IsString()
   achievements?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  projects?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  certifications?: string;
 }
 
 export enum CreateDocumentDtoCreationMode {

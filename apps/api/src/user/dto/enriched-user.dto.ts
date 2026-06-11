@@ -54,6 +54,12 @@ export class EnrichedUserDto {
   achievements: string;
 
   @ApiProperty({ nullable: true })
+  projects: string;
+
+  @ApiProperty({ nullable: true })
+  certifications: string;
+
+  @ApiProperty({ nullable: true })
   summary: string;
 
   @ApiProperty({ nullable: true })

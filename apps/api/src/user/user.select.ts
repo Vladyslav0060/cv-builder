@@ -35,6 +35,8 @@ export const enrichedUserSelect = {
   skills: true,
   summary: true,
   portfolio: true,
+  projects: true,
+  certifications: true,
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.UserSelect;

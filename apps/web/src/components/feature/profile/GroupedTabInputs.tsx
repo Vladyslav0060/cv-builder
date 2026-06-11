@@ -263,6 +263,8 @@ export const CVInputs = ({ isPending }: TabGroupProps) => {
           ["experience", "Experience", "Your recent roles and impact"],
           ["education", "Education", "Degrees, courses, certificates"],
           ["achievements", "Achievements", "Awards, publications, etc."],
+          ["projects", "Projects", "Notable projects, side work, or portfolio pieces"],
+          ["certifications", "Certifications", "Certifications or licenses you hold"],
         ] as const
       ).map(([name, label, desc]) => (
         <Controller
