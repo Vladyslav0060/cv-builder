@@ -73,11 +73,11 @@ export function AppBreadcrumbs() {
   return (
     <div
       suppressHydrationWarning
-      className="bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60"
+      className=" bg-background/40 backdrop-blur-sm"
     >
       <div
         suppressHydrationWarning
-        className="mx-auto flex h-12 max-w-7xl items-center px-4 sm:px-6 lg:px-8"
+        className="mx-auto flex h-9 max-w-7xl items-center px-4 text-sm sm:px-6 lg:px-8"
       >
         <Breadcrumb className="w-full">
           <BreadcrumbList className="flex-nowrap overflow-x-auto whitespace-nowrap">
