@@ -73,7 +73,7 @@ export function AppBreadcrumbs() {
   return (
     <div
       suppressHydrationWarning
-      className=" bg-background/40 backdrop-blur-sm"
+      className="backdrop-blur-sm"
     >
       <div
         suppressHydrationWarning
