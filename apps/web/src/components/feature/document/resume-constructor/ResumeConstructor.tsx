@@ -698,9 +698,9 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
   };
 
   return (
-    <div className="flex min-h-screen flex-col overflow-x-hidden">
+    <div className="flex min-h-screen flex-col overflow-x-clip">
       <div className="mx-auto grid min-h-full w-full min-w-0 max-w-screen-xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_clamp(340px,30vw,460px)] xl:items-start">
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_clamp(340px,30vw,460px)]">
           <section className="flex min-w-0 flex-col">
             <div className="shrink-0 mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div className="space-y-2">
@@ -1118,8 +1118,8 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
             </div>
           </section>
 
-          <section className="flex min-w-0 self-start xl:w-[clamp(340px,30vw,460px)] xl:shrink-0">
-            <div className="flex w-full flex-col xl:sticky xl:top-32 xl:h-[calc(100dvh-11rem)]">
+          <section className="flex min-w-0 xl:w-[clamp(340px,30vw,460px)] xl:shrink-0">
+            <div className="flex w-full flex-col xl:sticky xl:top-6 xl:h-[calc(100dvh-9.5rem)]">
               <div className="shrink-0 flex flex-wrap items-center gap-2 pb-4">
                 <Badge variant="secondary" className="gap-1.5">
                   <LayoutTemplate className="size-3.5" />
