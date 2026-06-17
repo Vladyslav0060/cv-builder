@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer';
 import { existsSync, readdirSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import type {
@@ -65,6 +66,7 @@ function resolveChromeExecutablePath() {
     process.env.PUPPETEER_CACHE_DIR,
     resolve(process.cwd(), '.cache', 'puppeteer'),
     resolve(process.cwd(), 'apps', 'api', '.cache', 'puppeteer'),
+    resolve(homedir(), '.cache', 'puppeteer'),
     '/opt/render/.cache/puppeteer',
     '/opt/render/project/src/.cache/puppeteer',
   ].filter((cacheDir): cacheDir is string => !!cacheDir);
