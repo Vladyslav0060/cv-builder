@@ -5,14 +5,7 @@ import { NewDocumentForm } from "../../../components/feature/document/NewDocumen
 
 export default function Page() {
   return (
-    <Container variant="constrainedBreakpointPadded" className="pt-8">
-      <PageBreadcrumbs
-        items={[
-          { href: ROUTES.HOME, title: "Home" },
-          { href: ROUTES.DOCUMENTS, title: "Documents" },
-          { href: ROUTES.NEW_DOCUMENT, title: "New Document" },
-        ]}
-      />
+    <Container variant="fullMobileConstrainedBreakpointPadded" paddingY="sm">
       <div className="flex size-full justify-center">
         <NewDocumentForm />
       </div>
