@@ -13,6 +13,25 @@ let browserPromise: Promise<
   Awaited<ReturnType<typeof puppeteer.launch>>
 > | null = null;
 
+const CHROME_BINARY_SUFFIXES = [
+  ['chrome-linux64', 'chrome'],
+  [
+    'chrome-mac-arm64',
+    'Google Chrome for Testing.app',
+    'Contents',
+    'MacOS',
+    'Google Chrome for Testing',
+  ],
+  [
+    'chrome-mac-x64',
+    'Google Chrome for Testing.app',
+    'Contents',
+    'MacOS',
+    'Google Chrome for Testing',
+  ],
+  ['chrome-win64', 'chrome.exe'],
+];
+
 function findChromeExecutable(cacheDir: string) {
   const chromeRoot = join(cacheDir, 'chrome');
 
@@ -25,15 +44,12 @@ function findChromeExecutable(cacheDir: string) {
       continue;
     }
 
-    const binaryPath = join(
-      chromeRoot,
-      entry.name,
-      'chrome-linux64',
-      'chrome',
-    );
+    for (const suffix of CHROME_BINARY_SUFFIXES) {
+      const binaryPath = join(chromeRoot, entry.name, ...suffix);
 
-    if (existsSync(binaryPath)) {
-      return binaryPath;
+      if (existsSync(binaryPath)) {
+        return binaryPath;
+      }
     }
   }
 
