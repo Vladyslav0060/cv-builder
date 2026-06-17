@@ -10,6 +10,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { ReadCvLogoIcon } from "@phosphor-icons/react";
 import { useSignOut } from "@/hooks/auth/useSignOut";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/common/routes";
@@ -36,9 +37,12 @@ export function TopNav() {
         paddingY="none"
       >
         <div className="flex h-14 items-center gap-3">
-          <Link href={ROUTES.HOME} className="font-semibold">
-            CV Assistant
-          </Link>
+          <div className="flex gap-1 items-center">
+            <ReadCvLogoIcon size={16} />
+            <Link href={ROUTES.HOME} className="font-semibold">
+              CV Builder
+            </Link>
+          </div>
 
           <div className="flex-1" />
 

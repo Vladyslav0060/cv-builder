@@ -1,11 +1,11 @@
 "use client";
+import { Container } from "@/components/ui/container";
 import RegisterForm from "./RegisterForm";
 
 export default function RegisterPage() {
   return (
-    <div className="flex flex-col">
-      <p>Register Page</p>
+    <Container className="flex flex-col justify-center max-w-sm">
       <RegisterForm />
-    </div>
+    </Container>
   );
 }
