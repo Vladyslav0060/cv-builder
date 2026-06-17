@@ -11,6 +11,8 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { toast } from "sonner";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -558,13 +560,12 @@ function CertificationEntryCard({
   );
 }
 
+const SAVE_TOAST_ID = "resume-unsaved-changes";
+
 export function ResumeConstructor({ documentId }: { documentId?: string } = {}) {
   const { data: existingResume } = useGetResume(documentId ?? "");
-  console.log({existingResume})
   const { data: userProfile } = useEnrichedMe();
-  const { mutate: saveResume, isPending: isSavingResume } = useSaveResume(
-    documentId ?? "",
-  );
+  const { mutate: saveResume } = useSaveResume(documentId ?? "");
 
   const [resume, setResume] = useState<ResumeData>(defaultResumeData);
   const [template, setTemplate] = useState<ResumeTemplateId>("classic");
@@ -614,6 +615,53 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
       resumeColorSchemes[0],
     [colorScheme],
   );
+
+  const exportPayloadRef = useRef(exportPayload);
+  useEffect(() => {
+    exportPayloadRef.current = exportPayload;
+  }, [exportPayload]);
+
+  const savedPayloadRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!documentId) return;
+    if (existingResume === undefined) return;
+    if (existingResume === null && !profileApplied) return;
+
+    const payloadStr = JSON.stringify(exportPayload);
+
+    if (savedPayloadRef.current === null) {
+      savedPayloadRef.current = payloadStr;
+      return;
+    }
+
+    if (payloadStr !== savedPayloadRef.current) {
+      toast("Unsaved changes", {
+        id: SAVE_TOAST_ID,
+        duration: Infinity,
+        action: {
+          label: "Save",
+          onClick: () => {
+            const payload = exportPayloadRef.current;
+            saveResume(payload, {
+              onSuccess: (saved) => {
+                savedPayloadRef.current = JSON.stringify(saved);
+                toast.dismiss(SAVE_TOAST_ID);
+                toast.success("Resume saved");
+              },
+            });
+          },
+        },
+      });
+    } else {
+      toast.dismiss(SAVE_TOAST_ID);
+    }
+  }, [exportPayload, existingResume, documentId, profileApplied, saveResume]);
+
+  useEffect(() => {
+    return () => {
+      toast.dismiss(SAVE_TOAST_ID);
+    };
+  }, []);
 
   const setPersonalInfo = (
     key: keyof ResumeData["personalInfo"],
@@ -719,15 +767,6 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
                   </p>
                 </div>
               </div>
-              {documentId ? (
-                <Button
-                  type="button"
-                  onClick={() => saveResume(exportPayload)}
-                  disabled={isSavingResume}
-                >
-                  {isSavingResume ? "Saving..." : "Save resume"}
-                </Button>
-              ) : null}
             </div>
 
             <div>

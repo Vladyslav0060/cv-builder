@@ -1,7 +1,8 @@
 "use client";
 
-import { JSX, useEffect } from "react";
-import { useForm, FormProvider } from "react-hook-form";
+import { JSX, useEffect, useRef } from "react";
+import { useForm, FormProvider, useFormState } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -87,6 +88,8 @@ const TAB_GROUP_COMPONENTS: Record<
 const renderTabGroup = (tab: UserTabValue, props: TabGroupProps) =>
   TAB_GROUP_COMPONENTS[tab]?.(props) ?? null;
 
+const PROFILE_TOAST_ID = "profile-unsaved-changes";
+
 export const PERSONAL_NAME_FIELDS = [
   {
     name: "firstName",
@@ -122,8 +125,7 @@ const ADDRESS_FIELDS = [
 export const ProfileForm = () => {
   const me = useCurrentUser();
   const { data: user } = useEnrichedUser(me?.id);
-  const { mutateAsync, isPending, isError, isSuccess, isLoading } =
-    useUpdateUser();
+  const { mutateAsync, isPending, isError, isLoading } = useUpdateUser();
 
   const form = useForm<ProfileFormValues>({
     // resolver: zodResolver(profileSchema),
@@ -179,6 +181,9 @@ export const ProfileForm = () => {
     });
   }, [user, form]);
 
+  const { isDirty } = useFormState({ control: form.control });
+  const submitRef = useRef<() => void>(() => {});
+
   async function onSubmit(values: ProfileFormValues) {
     const cleaned: UpdateUserDto = Object.fromEntries(
       Object.entries(values).map(([k, v]) => {
@@ -189,7 +194,31 @@ export const ProfileForm = () => {
     ) as UpdateUserDto;
 
     await mutateAsync(cleaned);
+    toast.dismiss(PROFILE_TOAST_ID);
   }
+
+  submitRef.current = form.handleSubmit(onSubmit);
+
+  useEffect(() => {
+    if (isDirty) {
+      toast("Unsaved changes", {
+        id: PROFILE_TOAST_ID,
+        duration: Infinity,
+        action: {
+          label: "Save",
+          onClick: () => submitRef.current(),
+        },
+      });
+    } else {
+      toast.dismiss(PROFILE_TOAST_ID);
+    }
+  }, [isDirty]);
+
+  useEffect(() => {
+    return () => {
+      toast.dismiss(PROFILE_TOAST_ID);
+    };
+  }, []);
 
   return (
     <FormProvider {...form}>
@@ -262,9 +291,6 @@ export const ProfileForm = () => {
             >
               Reset
             </Button>
-            <Button type="submit" disabled={isPending || isLoading}>
-              {isPending ? "Saving..." : "Save"}
-            </Button>
           </div>
 
           {isError && (
@@ -272,7 +298,6 @@ export const ProfileForm = () => {
               Failed to update profile. Please try again.
             </p>
           )}
-          {isSuccess && <p className="text-sm text-muted-foreground">Saved.</p>}
         </form>
       </Tabs>
     </FormProvider>
