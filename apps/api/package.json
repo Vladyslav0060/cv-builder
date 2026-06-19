@@ -8,7 +8,7 @@
   "scripts": {
     "prestart:dev": "node ../../scripts/sync-resume-constructor-layout.mjs",
     "build": "nest build",
-    "prebuild": "node ../../scripts/sync-resume-constructor-layout.mjs",
+    "prebuild": "node ../../scripts/sync-resume-constructor-layout.mjs && prisma generate && node ../../scripts/patch-prisma-generated-client.mjs",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "nest start --watch",
