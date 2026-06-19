@@ -1,17 +1,20 @@
 "use client";
 
-import { Download, LoaderCircle } from "lucide-react";
+import { Download, LoaderCircle, Maximize2 } from "lucide-react";
+import { Dialog as DialogPrimitive } from "radix-ui";
 import {
   useEffect,
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DialogOverlay, DialogPortal } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 import type {
@@ -122,6 +125,418 @@ function PageFrame({ theme, children }: { theme: Theme; children: ReactNode }) {
   );
 }
 
+function MinimalSectionTitle({
+  theme,
+  label,
+  style,
+}: {
+  theme: Theme;
+  label: string;
+  style: CSSProperties;
+}) {
+  return (
+    <div className="mb-2 flex items-center gap-2" style={style}>
+      <h3
+        className="shrink-0 font-bold uppercase"
+        style={{
+          color: theme.accent,
+          fontSize: style.fontSize,
+          letterSpacing: style.letterSpacing,
+        }}
+      >
+        {label}
+      </h3>
+      <div
+        className="flex-1 border-t"
+        style={{ borderTopColor: theme.border }}
+      />
+    </div>
+  );
+}
+
+function MinimalPreview({
+  resume,
+  theme,
+}: {
+  resume: ResumeData;
+  theme: Theme;
+}) {
+  const minimal = resumeConstructorLayout.minimal;
+  const titleStyle: React.CSSProperties = {
+    fontSize: minimal.sectionTitleFontSizePx,
+    letterSpacing: minimal.sectionTitleLetterSpacingPx,
+  };
+
+  return (
+    <PageFrame theme={theme}>
+      <header
+        className="border-b"
+        style={{
+          borderBottomColor: theme.border,
+          paddingLeft: minimal.headerHorizontalPaddingPx,
+          paddingRight: minimal.headerHorizontalPaddingPx,
+          paddingTop: minimal.headerVerticalPaddingPx,
+          paddingBottom: 18,
+        }}
+      >
+        <h2
+          className="font-bold leading-[1.05]"
+          style={{
+            fontSize: minimal.nameFontSizePx,
+            letterSpacing: -0.4,
+          }}
+        >
+          {resume.personalInfo.fullName}
+        </h2>
+        <p
+          className="mt-1 font-bold uppercase"
+          style={{
+            color: theme.accent,
+            fontSize: minimal.titleFontSizePx,
+            letterSpacing: minimal.titleLetterSpacingPx,
+            marginTop: minimal.titleTopMarginPx,
+          }}
+        >
+          {resume.personalInfo.title}
+        </p>
+        <div
+          className="flex flex-wrap items-center gap-x-1 gap-y-0.5"
+          style={{
+            marginTop: minimal.contactTopMarginPx,
+            fontSize: minimal.contactFontSizePx,
+          }}
+        >
+          {[
+            resume.personalInfo.email,
+            resume.personalInfo.phone,
+            resume.personalInfo.location,
+            resume.personalInfo.website,
+            resume.personalInfo.linkedin,
+            resume.personalInfo.github,
+          ]
+            .filter(isPresent)
+            .map((item, index, arr) => (
+              <span key={item} className="flex items-center gap-x-1">
+                {index > 0 ? (
+                  <span style={{ color: theme.border }}>·</span>
+                ) : null}
+                <a href={toHref(item)} className="hover:underline">
+                  {item}
+                </a>
+              </span>
+            ))}
+        </div>
+      </header>
+
+      <main
+        style={{
+          paddingLeft: minimal.bodyHorizontalPaddingPx,
+          paddingRight: minimal.bodyHorizontalPaddingPx,
+          paddingTop: minimal.bodyVerticalPaddingPx,
+          paddingBottom: minimal.bodyVerticalPaddingPx,
+        }}
+        className="space-y-4"
+      >
+        {resume.summary ? (
+          <section>
+            <MinimalSectionTitle
+              theme={theme}
+              label="Profile"
+              style={titleStyle}
+            />
+            <p
+              style={{
+                fontSize: minimal.paragraphFontSizePx,
+                lineHeight: 1.42,
+              }}
+            >
+              {resume.summary}
+            </p>
+          </section>
+        ) : null}
+
+        {!!resume.experience.length ? (
+          <section>
+            <MinimalSectionTitle
+              theme={theme}
+              label="Experience"
+              style={titleStyle}
+            />
+            <div className="space-y-3">
+              {resume.experience.map((experience) => (
+                <div key={experience.id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h4
+                        className="font-bold"
+                        style={{ fontSize: minimal.roleTitleFontSizePx }}
+                      >
+                        {experience.position}
+                      </h4>
+                      <p
+                        className="font-bold"
+                        style={{
+                          color: theme.accent,
+                          fontSize: minimal.companyFontSizePx,
+                        }}
+                      >
+                        {experience.company}
+                      </p>
+                    </div>
+                    <p
+                      className="shrink-0 text-right text-slate-500"
+                      style={{ fontSize: minimal.roleMetaFontSizePx }}
+                    >
+                      {formatDateRange(
+                        experience.startDate,
+                        experience.endDate,
+                        experience.isCurrent,
+                      )}
+                      {experience.location ? ` · ${experience.location}` : ""}
+                    </p>
+                  </div>
+                  <ul className="mt-1 space-y-1">
+                    {experience.description.filter(Boolean).map((item) => (
+                      <li
+                        key={item}
+                        className="flex gap-2 leading-[1.34]"
+                        style={{ fontSize: minimal.paragraphFontSizePx }}
+                      >
+                        <span
+                          className="mt-0.5"
+                          style={{ color: theme.accent }}
+                        >
+                          •
+                        </span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {!!resume.projects?.length ? (
+          <section>
+            <MinimalSectionTitle
+              theme={theme}
+              label="Projects"
+              style={titleStyle}
+            />
+            <div className="space-y-3">
+              {resume.projects.map((project) => (
+                <div key={project.id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <h4
+                      className="font-bold"
+                      style={{ fontSize: minimal.projectTitleFontSizePx }}
+                    >
+                      {project.name}
+                    </h4>
+                    {project.startDate || project.endDate ? (
+                      <p
+                        className="shrink-0 text-right text-slate-500"
+                        style={{ fontSize: minimal.projectMetaFontSizePx }}
+                      >
+                        {project.startDate
+                          ? formatDateRange(project.startDate, project.endDate)
+                          : project.endDate}
+                      </p>
+                    ) : null}
+                  </div>
+                  {project.link ? (
+                    <p
+                      className="text-slate-500"
+                      style={{
+                        fontSize: minimal.projectMetaFontSizePx,
+                        marginTop: minimal.projectMetaTopMarginPx,
+                      }}
+                    >
+                      <a
+                        href={toHref(project.link)}
+                        className="hover:underline"
+                      >
+                        {project.link}
+                      </a>
+                    </p>
+                  ) : null}
+                  <ul className="mt-1 space-y-1">
+                    {project.description.filter(Boolean).map((item) => (
+                      <li
+                        key={item}
+                        className="flex gap-2 leading-[1.34]"
+                        style={{ fontSize: minimal.paragraphFontSizePx }}
+                      >
+                        <span
+                          className="mt-0.5"
+                          style={{ color: theme.accent }}
+                        >
+                          •
+                        </span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {project.technologies?.length ? (
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {project.technologies.map((tech) => (
+                        <span
+                          key={tech}
+                          className="rounded-full border"
+                          style={{
+                            borderColor: theme.border,
+                            backgroundColor: theme.accentMuted,
+                            fontSize: minimal.techChipFontSizePx,
+                            paddingLeft: minimal.techChipHorizontalPaddingPx,
+                            paddingRight: minimal.techChipHorizontalPaddingPx,
+                            paddingTop: minimal.techChipVerticalPaddingPx,
+                            paddingBottom: minimal.techChipVerticalPaddingPx,
+                          }}
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {!!resume.education.length ? (
+          <section>
+            <MinimalSectionTitle
+              theme={theme}
+              label="Education"
+              style={titleStyle}
+            />
+            <div className="space-y-2">
+              {resume.education.map((education) => (
+                <div
+                  key={education.id}
+                  className="flex items-start justify-between gap-3"
+                >
+                  <div>
+                    <p
+                      className="font-bold"
+                      style={{ fontSize: minimal.educationTitleFontSizePx }}
+                    >
+                      {education.school}
+                    </p>
+                    <p
+                      className="text-slate-500"
+                      style={{ fontSize: minimal.educationMetaFontSizePx }}
+                    >
+                      {education.degree}
+                      {education.field ? `, ${education.field}` : ""}
+                    </p>
+                  </div>
+                  <p
+                    className="shrink-0 text-right text-slate-500"
+                    style={{ fontSize: minimal.educationMetaFontSizePx }}
+                  >
+                    {formatDateRange(education.startDate, education.endDate)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {!!resume.skills.length ? (
+          <section>
+            <MinimalSectionTitle
+              theme={theme}
+              label="Skills"
+              style={titleStyle}
+            />
+            <div className="flex flex-wrap gap-1.5">
+              {resume.skills.filter(Boolean).map((skill) => (
+                <span
+                  key={skill}
+                  className="rounded-full border"
+                  style={{
+                    borderColor: theme.border,
+                    backgroundColor: theme.accentMuted,
+                    fontSize: minimal.skillChipFontSizePx,
+                    paddingLeft: minimal.skillChipHorizontalPaddingPx,
+                    paddingRight: minimal.skillChipHorizontalPaddingPx,
+                    paddingTop: minimal.skillChipVerticalPaddingPx,
+                    paddingBottom: minimal.skillChipVerticalPaddingPx,
+                  }}
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {!!resume.languages?.length ? (
+          <section>
+            <MinimalSectionTitle
+              theme={theme}
+              label="Languages"
+              style={titleStyle}
+            />
+            <div className="flex flex-wrap gap-1.5">
+              {resume.languages.filter(Boolean).map((language) => (
+                <span
+                  key={language}
+                  className="rounded-full border"
+                  style={{
+                    borderColor: theme.border,
+                    backgroundColor: theme.accentMuted,
+                    fontSize: minimal.skillChipFontSizePx,
+                    paddingLeft: minimal.skillChipHorizontalPaddingPx,
+                    paddingRight: minimal.skillChipHorizontalPaddingPx,
+                    paddingTop: minimal.skillChipVerticalPaddingPx,
+                    paddingBottom: minimal.skillChipVerticalPaddingPx,
+                  }}
+                >
+                  {language}
+                </span>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {!!resume.certifications?.length ? (
+          <section>
+            <MinimalSectionTitle
+              theme={theme}
+              label="Certifications"
+              style={titleStyle}
+            />
+            <div className="space-y-2">
+              {resume.certifications.map((certification) => (
+                <div key={certification.id}>
+                  <p
+                    className="font-bold"
+                    style={{ fontSize: minimal.certificationTitleFontSizePx }}
+                  >
+                    {certification.name}
+                  </p>
+                  <p
+                    className="text-slate-500"
+                    style={{ fontSize: minimal.certificationMetaFontSizePx }}
+                  >
+                    {certification.issuer}
+                    {certification.date ? ` · ${certification.date}` : ""}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </main>
+    </PageFrame>
+  );
+}
+
 function ResumePreviewPage({
   resume,
   template,
@@ -131,11 +546,11 @@ function ResumePreviewPage({
   template: ResumeTemplateId;
   theme: Theme;
 }) {
-  return template === "classic" ? (
-    <ClassicPreview resume={resume} theme={theme} />
-  ) : (
-    <ModernPreview resume={resume} theme={theme} />
-  );
+  if (template === "classic")
+    return <ClassicPreview resume={resume} theme={theme} />;
+  if (template === "modern")
+    return <ModernPreview resume={resume} theme={theme} />;
+  return <MinimalPreview resume={resume} theme={theme} />;
 }
 
 function ClassicPreview({
@@ -149,7 +564,7 @@ function ClassicPreview({
 
   return (
     <PageFrame theme={theme}>
-      <div className="flex min-h-[1123px]">
+      <div className="flex min-h-280.75">
         <aside
           className="shrink-0 border-r"
           style={{
@@ -464,7 +879,7 @@ function ClassicPreview({
                           style={{ fontSize: classic.paragraphFontSizePx }}
                         >
                           <span
-                            className="mt-[2px]"
+                            className="mt-0.5"
                             style={{ color: theme.accent }}
                           >
                             •
@@ -532,7 +947,10 @@ function ClassicPreview({
                           marginTop: classic.projectMetaTopMarginPx,
                         }}
                       >
-                        <a href={toHref(project.link)} className="hover:underline">
+                        <a
+                          href={toHref(project.link)}
+                          className="hover:underline"
+                        >
                           {project.link}
                         </a>
                       </p>
@@ -545,7 +963,7 @@ function ClassicPreview({
                           style={{ fontSize: classic.paragraphFontSizePx }}
                         >
                           <span
-                            className="mt-[2px]"
+                            className="mt-0.5"
                             style={{ color: theme.accent }}
                           >
                             •
@@ -565,11 +983,9 @@ function ClassicPreview({
                               backgroundColor: theme.paper,
                               fontSize: classic.techChipFontSizePx,
                               paddingLeft: classic.techChipHorizontalPaddingPx,
-                              paddingRight:
-                                classic.techChipHorizontalPaddingPx,
+                              paddingRight: classic.techChipHorizontalPaddingPx,
                               paddingTop: classic.techChipVerticalPaddingPx,
-                              paddingBottom:
-                                classic.techChipVerticalPaddingPx,
+                              paddingBottom: classic.techChipVerticalPaddingPx,
                             }}
                           >
                             {tech}
@@ -933,7 +1349,7 @@ function ModernPreview({
                             style={{ fontSize: modern.paragraphFontSizePx }}
                           >
                             <span
-                              className="mt-[2px]"
+                              className="mt-0.5"
                               style={{ color: theme.accent }}
                             >
                               •
@@ -1017,7 +1433,7 @@ function ModernPreview({
                             style={{ fontSize: modern.paragraphFontSizePx }}
                           >
                             <span
-                              className="mt-[2px]"
+                              className="mt-0.5"
                               style={{ color: theme.accent }}
                             >
                               •
@@ -1040,8 +1456,7 @@ function ModernPreview({
                                 paddingRight:
                                   modern.techChipHorizontalPaddingPx,
                                 paddingTop: modern.techChipVerticalPaddingPx,
-                                paddingBottom:
-                                  modern.techChipVerticalPaddingPx,
+                                paddingBottom: modern.techChipVerticalPaddingPx,
                               }}
                             >
                               {tech}
@@ -1229,46 +1644,79 @@ export function ResumePdfPreview({
   isExporting?: boolean;
   onExport?: () => void;
 }) {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   return (
-    <Card
-      className={cn(
-        "flex h-full min-h-0 flex-col border-border/60 bg-linear-to-b from-slate-100/80 to-slate-200/70 shadow-sm backdrop-blur dark:from-slate-800/60 dark:to-slate-900/60",
-        className,
-      )}
-    >
-      <CardHeader className="flex w-full flex-row items-center justify-between border-b border-border/60 pb-4">
-        <div className="flex min-w-0 flex-1">
-          <CardTitle className="w-full text-base">PDF preview</CardTitle>
-        </div>
-        {onExport ? (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onExport}
-            disabled={isExporting}
-          >
-            {isExporting ? (
-              <LoaderCircle className="size-4 animate-spin" />
-            ) : (
-              <Download className="size-4" />
-            )}
-            Export
-          </Button>
-        ) : null}
-      </CardHeader>
-      <CardContent className="min-h-0 flex-1 p-0">
-        {resume ? (
-          <PreviewSurface
-            resume={resume}
-            template={template}
-            colorScheme={colorScheme}
-          />
-        ) : (
-          <div className="flex min-h-[72vh] items-center justify-center bg-slate-100/70 p-6 text-sm text-muted-foreground dark:bg-slate-900/40">
-            Rendering preview...
-          </div>
+    <>
+      <Card
+        className={cn(
+          "flex h-full min-h-0 flex-col border-border/60 bg-card/75 shadow-sm backdrop-blur dark:from-slate-800/60 dark:to-slate-900/60",
+          className,
         )}
-      </CardContent>
-    </Card>
+      >
+        <CardHeader className="flex w-full flex-row items-center justify-between border-b border-border/60 pb-4">
+          <div className="flex min-w-0 flex-1">
+            <CardTitle className="w-full text-base">PDF preview</CardTitle>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsFullscreen(true)}
+            >
+              <Maximize2 className="size-4" />
+              Full screen
+            </Button>
+            {onExport ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onExport}
+                disabled={isExporting}
+              >
+                {isExporting ? (
+                  <LoaderCircle className="size-4 animate-spin" />
+                ) : (
+                  <Download className="size-4" />
+                )}
+                Export
+              </Button>
+            ) : null}
+          </div>
+        </CardHeader>
+        <CardContent className="min-h-0 flex-1 p-0">
+          {resume ? (
+            <PreviewSurface
+              resume={resume}
+              template={template}
+              colorScheme={colorScheme}
+            />
+          ) : (
+            <div className="flex min-h-[72vh] items-center justify-center bg-slate-100/70 p-6 text-sm text-muted-foreground dark:bg-slate-900/40">
+              Rendering preview...
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <DialogPrimitive.Root open={isFullscreen} onOpenChange={setIsFullscreen}>
+        <DialogPortal>
+          <DialogOverlay className="bg-card/75 backdrop-blur-sm" />
+          <DialogPrimitive.Content
+            aria-describedby={undefined}
+            className="fixed top-1/2 left-1/2 z-50 -translate-x-1/2 -translate-y-1/2 outline-none w-[min(90vw,794px)] h-[min(90dvh,1123px)]"
+          >
+            <DialogPrimitive.Title className="sr-only">
+              PDF preview
+            </DialogPrimitive.Title>
+            <PreviewSurface
+              resume={resume}
+              template={template}
+              colorScheme={colorScheme}
+            />
+          </DialogPrimitive.Content>
+        </DialogPortal>
+      </DialogPrimitive.Root>
+    </>
   );
 }

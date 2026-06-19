@@ -783,6 +783,402 @@ function ModernTemplate({
   );
 }
 
+type MinimalStyles = {
+  page: PdfStyle;
+  header: PdfStyle;
+  name: PdfStyle;
+  title: PdfStyle;
+  contactRow: PdfStyle;
+  contactItem: PdfStyle;
+  contactSep: PdfStyle;
+  contactLink: PdfStyle;
+  body: PdfStyle;
+  section: PdfStyle;
+  sectionTitleRow: PdfStyle;
+  sectionTitle: PdfStyle;
+  sectionRule: PdfStyle;
+  paragraph: PdfStyle;
+  experienceItem: PdfStyle;
+  roleRow: PdfStyle;
+  roleTitle: PdfStyle;
+  company: PdfStyle;
+  roleMeta: PdfStyle;
+  bulletList: PdfStyle;
+  bulletRow: PdfStyle;
+  bullet: PdfStyle;
+  bulletText: PdfStyle;
+  educationItem: PdfStyle;
+  educationTitle: PdfStyle;
+  educationMeta: PdfStyle;
+  chipWrap: PdfStyle;
+  chip: PdfStyle;
+  chipText: PdfStyle;
+  certificationItem: PdfStyle;
+  certificationTitle: PdfStyle;
+  certificationMeta: PdfStyle;
+  projectItem: PdfStyle;
+  projectTitle: PdfStyle;
+  projectMeta: PdfStyle;
+};
+
+function createMinimalStyles(theme: StyleTheme) {
+  return StyleSheet.create<MinimalStyles>({
+    page: {
+      backgroundColor: theme.paper,
+      color: theme.ink,
+      fontFamily: "Helvetica",
+      fontSize: 9.2,
+      lineHeight: 1.38,
+      padding: 0,
+    },
+    header: {
+      paddingHorizontal: 32,
+      paddingTop: 24,
+      paddingBottom: 18,
+      borderBottomColor: theme.border,
+      borderBottomWidth: 1,
+    },
+    name: {
+      color: theme.ink,
+      fontSize: 24,
+      fontWeight: "bold",
+      lineHeight: 1.05,
+      letterSpacing: -0.4,
+    },
+    title: {
+      color: theme.accent,
+      fontSize: 9.8,
+      fontWeight: "bold",
+      letterSpacing: 1.4,
+      marginTop: 4,
+      textTransform: "uppercase",
+    },
+    contactRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      marginTop: 10,
+    },
+    contactItem: {
+      fontSize: 8.2,
+    },
+    contactSep: {
+      fontSize: 8.2,
+      color: "#9ca3af",
+      paddingHorizontal: 5,
+    },
+    contactLink: {
+      color: theme.ink,
+      textDecoration: "none",
+    },
+    body: {
+      paddingHorizontal: 32,
+      paddingVertical: 20,
+    },
+    section: {
+      marginBottom: 16,
+    },
+    sectionTitleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    sectionTitle: {
+      color: theme.accent,
+      fontSize: 9.2,
+      fontWeight: "bold",
+      letterSpacing: 1.2,
+      textTransform: "uppercase",
+    },
+    sectionRule: {
+      flexGrow: 1,
+      height: 1,
+      backgroundColor: theme.border,
+      marginLeft: 8,
+    },
+    paragraph: {
+      fontSize: 9.2,
+      lineHeight: 1.42,
+      color: theme.ink,
+    },
+    experienceItem: {
+      marginBottom: 12,
+    },
+    roleRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      marginBottom: 2,
+    },
+    roleTitle: {
+      fontSize: 10.2,
+      fontWeight: "bold",
+      color: theme.ink,
+    },
+    company: {
+      marginTop: 1,
+      fontSize: 9.2,
+      color: theme.accent,
+      fontWeight: "bold",
+    },
+    roleMeta: {
+      fontSize: 8.4,
+      color: "#4b5563",
+      textAlign: "right",
+    },
+    bulletList: {
+      marginTop: 4,
+    },
+    bulletRow: {
+      flexDirection: "row",
+      marginBottom: 4,
+    },
+    bullet: {
+      width: 9,
+      color: theme.accent,
+      fontSize: 9,
+      lineHeight: 1.3,
+      paddingTop: 0.5,
+    },
+    bulletText: {
+      flexGrow: 1,
+      flexShrink: 1,
+      fontSize: 9.2,
+      lineHeight: 1.34,
+      color: theme.ink,
+    },
+    educationItem: {
+      marginBottom: 10,
+    },
+    educationTitle: {
+      fontSize: 9.6,
+      fontWeight: "bold",
+      color: theme.ink,
+    },
+    educationMeta: {
+      fontSize: 8.4,
+      color: "#4b5563",
+      marginTop: 1,
+    },
+    chipWrap: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      marginTop: 2,
+    },
+    chip: {
+      borderColor: theme.border,
+      borderWidth: 1,
+      backgroundColor: theme.accentMuted,
+      borderRadius: 999,
+      paddingHorizontal: 7,
+      paddingVertical: 4,
+      marginRight: 5,
+      marginBottom: 5,
+    },
+    chipText: {
+      fontSize: 8.1,
+      color: theme.ink,
+    },
+    certificationItem: {
+      marginBottom: 10,
+    },
+    certificationTitle: {
+      fontSize: 9.6,
+      fontWeight: "bold",
+      color: theme.ink,
+    },
+    certificationMeta: {
+      fontSize: 8.4,
+      color: "#4b5563",
+      marginTop: 1,
+    },
+    projectItem: {
+      marginBottom: 12,
+    },
+    projectTitle: {
+      fontSize: 9.8,
+      fontWeight: "bold",
+      color: theme.ink,
+    },
+    projectMeta: {
+      fontSize: 8.4,
+      color: "#4b5563",
+      marginTop: 1,
+    },
+  });
+}
+
+function MinimalSectionHeader({
+  styles,
+  label,
+}: {
+  styles: MinimalStyles;
+  label: string;
+}) {
+  return (
+    <View style={styles.sectionTitleRow}>
+      <Text style={styles.sectionTitle}>{label}</Text>
+      <View style={styles.sectionRule} />
+    </View>
+  );
+}
+
+function MinimalTemplate({
+  resume,
+  theme,
+}: {
+  resume: ResumeData;
+  theme: StyleTheme;
+}) {
+  const styles = createMinimalStyles(theme);
+  const contacts = formatContacts(resume);
+
+  return (
+    <Page size="A4" style={styles.page}>
+      <View style={styles.header}>
+        <Text style={styles.name}>{resume.personalInfo.fullName}</Text>
+        <Text style={styles.title}>{resume.personalInfo.title}</Text>
+        <View style={styles.contactRow}>
+          {contacts.map((item, index) => (
+            <View key={item} style={{ flexDirection: "row" }}>
+              {index > 0 ? <Text style={styles.contactSep}>·</Text> : null}
+              <Link src={toHref(item)} style={styles.contactLink}>
+                <Text style={styles.contactItem}>{item}</Text>
+              </Link>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.body}>
+        {resume.summary ? (
+          <View style={styles.section}>
+            <MinimalSectionHeader styles={styles} label="Profile" />
+            <Text style={styles.paragraph}>{sanitizeText(resume.summary)}</Text>
+          </View>
+        ) : null}
+
+        {!!resume.experience.length ? (
+          <View style={styles.section}>
+            <MinimalSectionHeader styles={styles} label="Experience" />
+            {resume.experience.map((experience) => (
+              <View key={experience.id} style={styles.experienceItem}>
+                <View style={styles.roleRow}>
+                  <View style={{ flexGrow: 1, flexShrink: 1 }}>
+                    <Text style={styles.roleTitle}>{experience.position}</Text>
+                    <Text style={styles.company}>{experience.company}</Text>
+                  </View>
+                  <Text style={styles.roleMeta}>
+                    {formatDateRange(
+                      experience.startDate,
+                      experience.endDate,
+                      experience.isCurrent,
+                    )}
+                    {experience.location ? `\n${experience.location}` : ""}
+                  </Text>
+                </View>
+                {renderBulletPoints(styles, experience.description)}
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {!!resume.projects?.length ? (
+          <View style={styles.section}>
+            <MinimalSectionHeader styles={styles} label="Projects" />
+            {resume.projects.map((project) => (
+              <View key={project.id} style={styles.projectItem}>
+                <View style={styles.roleRow}>
+                  <Text style={styles.projectTitle}>{project.name}</Text>
+                  {project.startDate || project.endDate ? (
+                    <Text style={styles.roleMeta}>
+                      {project.startDate
+                        ? formatDateRange(project.startDate, project.endDate)
+                        : project.endDate}
+                    </Text>
+                  ) : null}
+                </View>
+                {project.link ? (
+                  <Link src={toHref(project.link)} style={styles.contactLink}>
+                    <Text style={styles.projectMeta}>{project.link}</Text>
+                  </Link>
+                ) : null}
+                {renderBulletPoints(styles, project.description)}
+                {project.technologies?.length ? (
+                  <View style={styles.chipWrap}>
+                    {project.technologies.filter(Boolean).map((tech) => (
+                      <View key={tech} style={styles.chip}>
+                        <Text style={styles.chipText}>{tech}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {!!resume.education.length ? (
+          <View style={styles.section}>
+            <MinimalSectionHeader styles={styles} label="Education" />
+            {resume.education.map((education) => (
+              <View key={education.id} style={styles.educationItem}>
+                <View style={styles.roleRow}>
+                  <Text style={styles.educationTitle}>{education.school}</Text>
+                  <Text style={styles.roleMeta}>
+                    {formatDateRange(education.startDate, education.endDate)}
+                  </Text>
+                </View>
+                <Text style={styles.educationMeta}>
+                  {education.degree}
+                  {education.field ? `, ${education.field}` : ""}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {!!resume.skills.length ? (
+          <View style={styles.section}>
+            <MinimalSectionHeader styles={styles} label="Skills" />
+            {renderSkills(
+              { chipWrap: styles.chipWrap, chip: styles.chip, chipText: styles.chipText },
+              resume.skills,
+              "chips",
+            )}
+          </View>
+        ) : null}
+
+        {!!resume.languages?.length ? (
+          <View style={styles.section}>
+            <MinimalSectionHeader styles={styles} label="Languages" />
+            {renderSkills(
+              { chipWrap: styles.chipWrap, chip: styles.chip, chipText: styles.chipText },
+              resume.languages,
+              "chips",
+            )}
+          </View>
+        ) : null}
+
+        {!!resume.certifications?.length ? (
+          <View style={styles.section}>
+            <MinimalSectionHeader styles={styles} label="Certifications" />
+            {resume.certifications.map((certification) => (
+              <View key={certification.id} style={styles.certificationItem}>
+                <Text style={styles.certificationTitle}>
+                  {certification.name}
+                </Text>
+                <Text style={styles.certificationMeta}>
+                  {certification.issuer}
+                  {certification.date ? ` · ${certification.date}` : ""}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+      </View>
+    </Page>
+  );
+}
+
 export function ResumePdfDocument({
   resume = defaultResumeData,
   template,
@@ -794,8 +1190,10 @@ export function ResumePdfDocument({
     <Document>
       {template === "classic" ? (
         <ClassicTemplate resume={resume} theme={theme} />
-      ) : (
+      ) : template === "modern" ? (
         <ModernTemplate resume={resume} theme={theme} />
+      ) : (
+        <MinimalTemplate resume={resume} theme={theme} />
       )}
     </Document>
   );

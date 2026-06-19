@@ -24,13 +24,6 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -919,7 +912,7 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-clip">
-      <div className="mx-auto grid min-h-full w-full min-w-0 max-w-screen-xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto grid min-h-full w-full min-w-0 max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_clamp(340px,30vw,460px)]">
           <section className="flex min-w-0 flex-col">
             <div className="shrink-0 mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -957,7 +950,7 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
                       setTemplate(value as ResumeTemplateId)
                     }
                   >
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                       {resumeTemplates.map((option) => (
                         <TabsTrigger key={option.id} value={option.id}>
                           {option.label}
@@ -978,23 +971,29 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
                   </Tabs>
 
                   <Field label="Color scheme">
-                    <Select
-                      value={colorScheme}
-                      onValueChange={(value) =>
-                        setColorScheme(value as ResumeColorSchemeId)
-                      }
+                    <div
+                      role="radiogroup"
+                      aria-label="Color scheme"
+                      className="flex flex-wrap gap-2"
                     >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Choose a color scheme" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {resumeColorSchemes.map((scheme) => (
-                          <SelectItem key={scheme.id} value={scheme.id}>
-                            {scheme.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      {resumeColorSchemes.map((scheme) => (
+                        <button
+                          key={scheme.id}
+                          type="button"
+                          role="radio"
+                          aria-checked={colorScheme === scheme.id}
+                          onClick={() => setColorScheme(scheme.id)}
+                          title={scheme.label}
+                          className={cn(
+                            "size-7 rounded-full transition-all",
+                            colorScheme === scheme.id
+                              ? "scale-110 ring-2 ring-primary ring-offset-2"
+                              : "opacity-70 hover:scale-105 hover:opacity-100",
+                          )}
+                          style={{ backgroundColor: scheme.accent }}
+                        />
+                      ))}
+                    </div>
                   </Field>
                 </CardContent>
               </Card>
@@ -1049,18 +1048,20 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
               ))}
 
               <div className="grid gap-6 md:grid-cols-2">
-                {LIST_EDITOR_CONFIGS.map(({ key, label, icon, placeholder }) => (
-                  <ListEditor
-                    key={key}
-                    label={label}
-                    icon={icon}
-                    placeholder={placeholder}
-                    values={(resume[key] ?? []) as string[]}
-                    onChange={(next) =>
-                      setResume((c) => ({ ...c, [key]: next }))
-                    }
-                  />
-                ))}
+                {LIST_EDITOR_CONFIGS.map(
+                  ({ key, label, icon, placeholder }) => (
+                    <ListEditor
+                      key={key}
+                      label={label}
+                      icon={icon}
+                      placeholder={placeholder}
+                      values={(resume[key] ?? []) as string[]}
+                      onChange={(next) =>
+                        setResume((c) => ({ ...c, [key]: next }))
+                      }
+                    />
+                  ),
+                )}
               </div>
             </div>
           </section>
@@ -1070,9 +1071,8 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
               <div className="shrink-0 flex flex-wrap items-center gap-2 pb-4">
                 <Badge variant="secondary" className="gap-1.5">
                   <LayoutTemplate className="size-3.5" />
-                  {template === "classic"
-                    ? "Classic sidebar"
-                    : "Modern editorial"}
+                  {resumeTemplates.find((t) => t.id === template)?.label ??
+                    template}
                 </Badge>
                 <Badge
                   variant="outline"

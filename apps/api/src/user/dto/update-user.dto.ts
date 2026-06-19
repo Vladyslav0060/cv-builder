@@ -1,12 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsEmail,
-  IsEnum,
   IsOptional,
   IsString,
   IsUrl,
 } from 'class-validator';
-import { UserRole } from './create-user.dto';
 
 export class UpdateUserDto {
   @ApiPropertyOptional()
@@ -28,11 +26,6 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   avatarUrl?: string;
-
-  @ApiPropertyOptional({ enum: UserRole })
-  @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
 
   @ApiPropertyOptional()
   @IsOptional()

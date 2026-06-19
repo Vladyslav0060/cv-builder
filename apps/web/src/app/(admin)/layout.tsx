@@ -7,5 +7,5 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AuthGate adminOnly>{children}</AuthGate>;
+  return <AuthGate>{children}</AuthGate>;
 }

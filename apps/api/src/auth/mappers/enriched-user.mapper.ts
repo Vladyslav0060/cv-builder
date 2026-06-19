@@ -41,7 +41,6 @@ export function toEnrichedUserDto(user: EnrichedUser): EnrichedUserDto {
     firstName: user.firstName ?? '',
     lastName: user.lastName ?? '',
     avatarUrl: user.avatarUrl ?? '',
-    role: user.role as any,
     address: user.address ?? '',
     city: user.city ?? '',
     state: user.state ?? '',

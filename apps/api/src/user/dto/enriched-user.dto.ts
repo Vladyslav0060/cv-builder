@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole } from './create-user.dto';
 
 export class EnrichedUserDto {
   @ApiProperty()
@@ -16,9 +15,6 @@ export class EnrichedUserDto {
 
   @ApiProperty({ nullable: true })
   avatarUrl: string;
-
-  @ApiProperty({ enum: UserRole, example: UserRole.USER })
-  role: UserRole;
 
   @ApiProperty({ nullable: true })
   address: string;

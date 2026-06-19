@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole } from '../../user/dto/create-user.dto';
 import { IsEmail, IsString } from 'class-validator';
 
 export class MeDto {
@@ -20,9 +19,6 @@ export class MeDto {
 
   @ApiProperty({ required: false, nullable: true })
   avatarUrl: string;
-
-  @ApiProperty({ enum: UserRole, example: UserRole.USER })
-  role: string;
 
   @ApiProperty()
   emailVerified: boolean;

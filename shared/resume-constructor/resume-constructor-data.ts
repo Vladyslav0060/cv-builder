@@ -63,8 +63,16 @@ export type ResumeExportPayload = {
   colorScheme?: ResumeColorSchemeId;
 };
 
-export type ResumeTemplateId = "classic" | "modern";
-export type ResumeColorSchemeId = "slate" | "forest" | "wine";
+export type ResumeTemplateId = "classic" | "modern" | "minimal";
+export type ResumeColorSchemeId =
+  | "slate"
+  | "forest"
+  | "wine"
+  | "amber"
+  | "orchid"
+  | "graphite"
+  | "teal"
+  | "rose";
 
 export type ResumeColorScheme = {
   id: ResumeColorSchemeId;
@@ -94,6 +102,12 @@ export const resumeTemplates: ResumeTemplateOption[] = [
     id: "modern",
     label: "Modern editorial",
     description: "Airier layout with framed sections and a stronger visual hierarchy.",
+  },
+  {
+    id: "minimal",
+    label: "Minimal",
+    description:
+      "Clean single-column layout with ruled section headers. ATS-friendly and easy to scan.",
   },
 ];
 
@@ -127,6 +141,56 @@ export const resumeColorSchemes: ResumeColorScheme[] = [
     ink: "#4c0519",
     paper: "#ffffff",
     border: "#f3c9d9",
+  },
+  {
+    id: "amber",
+    label: "Amber gold",
+    accent: "#b45309",
+    accentSoft: "#fef3c7",
+    accentMuted: "#fefce8",
+    ink: "#1c1917",
+    paper: "#ffffff",
+    border: "#fde68a",
+  },
+  {
+    id: "orchid",
+    label: "Orchid violet",
+    accent: "#7c3aed",
+    accentSoft: "#ede9fe",
+    accentMuted: "#f5f3ff",
+    ink: "#1e1b4b",
+    paper: "#ffffff",
+    border: "#ddd6fe",
+  },
+  {
+    id: "graphite",
+    label: "Graphite",
+    accent: "#1f2937",
+    accentSoft: "#f3f4f6",
+    accentMuted: "#f9fafb",
+    ink: "#111827",
+    paper: "#ffffff",
+    border: "#e5e7eb",
+  },
+  {
+    id: "teal",
+    label: "Teal ocean",
+    accent: "#0e7490",
+    accentSoft: "#cffafe",
+    accentMuted: "#ecfeff",
+    ink: "#083344",
+    paper: "#ffffff",
+    border: "#a5f3fc",
+  },
+  {
+    id: "rose",
+    label: "Rose",
+    accent: "#be185d",
+    accentSoft: "#fce7f3",
+    accentMuted: "#fdf2f8",
+    ink: "#500724",
+    paper: "#ffffff",
+    border: "#fbcfe8",
   },
 ];
 
