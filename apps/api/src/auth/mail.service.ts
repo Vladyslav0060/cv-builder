@@ -18,16 +18,15 @@ export class MailService {
     });
   }
 
-  async sendVerificationEmail(to: string, token: string): Promise<void> {
-    const url = `${process.env.WEB_BASE_URL}/verify-email?token=${token}`;
+  async sendVerificationEmail(to: string, code: string): Promise<void> {
     await this.transporter.sendMail({
       from: process.env.SMTP_FROM,
       to,
       subject: 'Verify your email – CV Builder',
       html: `
         <p>Hi there,</p>
-        <p>Please verify your email address by clicking the link below. The link expires in 24 hours.</p>
-        <p><a href="${url}">Verify email</a></p>
+        <p>Enter the code below to verify your email address. The code expires in 15 minutes.</p>
+        <p style="font-size:32px;font-weight:bold;letter-spacing:8px;">${code}</p>
         <p>If you didn't create an account, you can safely ignore this email.</p>
       `,
     });

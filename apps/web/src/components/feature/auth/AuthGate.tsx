@@ -22,6 +22,11 @@ export function AuthGate({
       return;
     }
 
+    if (me.emailVerified === false) {
+      router.replace("/verify-email");
+      return;
+    }
+
     if (adminOnly && me.role !== "admin") {
       router.replace("/403");
     }
@@ -29,6 +34,7 @@ export function AuthGate({
 
   if (isLoading || me === undefined) return null;
   if (!me) return null;
+  if (me.emailVerified === false) return null;
   if (adminOnly && me.role !== "admin") return null;
 
   return <>{children}</>;

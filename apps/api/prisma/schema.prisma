@@ -53,8 +53,8 @@ model Credential {
   userId               String    @unique
   passwordHash         String
   emailVerified        Boolean   @default(false)
-  verifyToken          String?   @unique
-  verifyTokenExpiresAt DateTime?
+  verifyCode           String?
+  verifyCodeExpiresAt  DateTime?
   resetToken           String?   @unique
   resetTokenExpiresAt  DateTime?
   createdAt            DateTime  @default(now())

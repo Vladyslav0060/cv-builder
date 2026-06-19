@@ -4,9 +4,11 @@ import {
   Controller,
   Delete,
   Get,
+  InternalServerErrorException,
   Param,
   Patch,
   Req,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
@@ -21,6 +23,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthenticatedGuard } from 'src/auth/guards/authenticated.guard';
 import { EnrichedUserDto } from './dto/enriched-user.dto';
 import { toEnrichedUserDto } from 'src/auth/mappers/enriched-user.mapper';
+import { LogoutResponseDto } from 'src/auth/dto/logout-response.dto';
+import { Request, Response } from 'express';
 
 @Controller('user')
 export class UserController {
@@ -44,6 +48,43 @@ export class UserController {
   })
   async updateUser(@Req() req: any, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.updateUser(req.user.id, updateUserDto);
+  }
+
+  @Delete('me')
+  @ApiOperation({ summary: 'Delete the currently authenticated user account' })
+  @ApiOkResponse({
+    description: 'Account deleted and session cleared',
+    type: LogoutResponseDto,
+  })
+  @UseGuards(AuthenticatedGuard)
+  deleteMe(
+    @Req() req: Request & { user?: any },
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<LogoutResponseDto> {
+    const userId: string = (req as any).user.id;
+
+    return new Promise<LogoutResponseDto>((resolve, reject) => {
+      req.logout((err: any) => {
+        if (err) return reject(new InternalServerErrorException('Logout failed'));
+
+        req.session?.destroy(async (sessionErr: any) => {
+          if (sessionErr) {
+            return reject(
+              new InternalServerErrorException('Session destroy failed'),
+            );
+          }
+
+          res.clearCookie('sid');
+
+          try {
+            await this.userService.deleteUser(userId);
+            resolve({ ok: true });
+          } catch (deleteErr) {
+            reject(new InternalServerErrorException('Failed to delete user'));
+          }
+        });
+      });
+    });
   }
 
   @Delete(':id')
