@@ -32,13 +32,9 @@ async function bootstrap() {
 
   app.use(cookieParser(process.env.APP_SECRET));
   const connectionString = process.env.DIRECT_URL ?? process.env.DATABASE_URL;
-  const usePersistentSessionStore =
-    process.env.npm_lifecycle_event === 'start:prod';
   let sessionStore: PostgresSessionStore | undefined;
 
-  if (!usePersistentSessionStore) {
-    console.warn('Using the in-memory session store in dev mode.');
-  } else if (!connectionString) {
+  if (!connectionString) {
     throw new Error(
       'DATABASE_URL or DIRECT_URL is not set. Provide one for the session store.',
     );
