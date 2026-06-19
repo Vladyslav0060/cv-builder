@@ -26,7 +26,7 @@ export class UpdateUserDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUrl()
+  @IsString()
   avatarUrl?: string;
 
   @ApiPropertyOptional({ enum: UserRole })
