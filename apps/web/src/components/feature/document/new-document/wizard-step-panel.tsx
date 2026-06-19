@@ -41,7 +41,9 @@ export function WizardStepPanel({
   return (
     <Card className="border-border/60 bg-card/85 shadow-sm backdrop-blur">
       <CardHeader className="border-b border-border/60 pb-5">
-        <CardTitle className="text-2xl">{step.title}</CardTitle>
+        <CardTitle className="text-xl leading-tight sm:text-2xl">
+          {step.title}
+        </CardTitle>
         <CardDescription className="max-w-2xl text-sm sm:text-base">
           {step.description}
         </CardDescription>
@@ -61,7 +63,9 @@ export function WizardStepPanel({
         </FieldGroup>
       </CardContent>
       {footer ? (
-        <CardFooter className="justify-between gap-3">{footer}</CardFooter>
+        <CardFooter className="flex-col-reverse justify-between gap-3 sm:flex-row [&>button]:w-full sm:[&>button]:w-auto">
+          {footer}
+        </CardFooter>
       ) : null}
     </Card>
   );

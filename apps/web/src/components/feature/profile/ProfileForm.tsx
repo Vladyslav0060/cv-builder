@@ -1,6 +1,6 @@
 "use client";
 
-import { JSX, useEffect, useRef } from "react";
+import { JSX, useCallback, useEffect, useRef } from "react";
 import { useForm, FormProvider, useFormState } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -9,24 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { UpdateUserDto } from "@/api/generated.schemas";
 import { useUpdateUser } from "@/hooks/auth/useUpdateUser";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-  FieldSeparator,
-} from "@/components/ui/field";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { FieldGroup } from "@/components/ui/field";
 import { UserControllerUpdateUserBody } from "@/api/models/user/user.zod";
 import { useEnrichedUser } from "@/hooks/user/useEnrichedUser";
 import { useCurrentUser } from "@/hooks/auth/current-user";
@@ -103,29 +86,10 @@ export const PERSONAL_NAME_FIELDS = [
   },
 ] as const;
 
-const CONTACT_FIELDS = [
-  {
-    name: "linkedIn",
-    label: "LinkedIn",
-    placeholder: "https://linkedin.com/in/...",
-  },
-  {
-    name: "portfolio",
-    label: "Portfolio",
-    placeholder: "https://...",
-  },
-] as const;
-
-const ADDRESS_FIELDS = [
-  { name: "city", label: "City" },
-  { name: "state", label: "State" },
-  { name: "zip", label: "ZIP" },
-] as const;
-
 export const ProfileForm = () => {
   const me = useCurrentUser();
   const { data: user } = useEnrichedUser(me?.id);
-  const { mutateAsync, isPending, isError, isLoading } = useUpdateUser();
+  const { mutateAsync, isPending, isError } = useUpdateUser();
 
   const form = useForm<ProfileFormValues>({
     // resolver: zodResolver(profileSchema),
@@ -182,35 +146,51 @@ export const ProfileForm = () => {
   const { isDirty } = useFormState({ control: form.control });
   const submitRef = useRef<() => void>(() => {});
 
-  async function onSubmit(values: ProfileFormValues) {
-    const cleaned: UpdateUserDto = Object.fromEntries(
-      Object.entries(values).map(([k, v]) => {
-        if (typeof v !== "string") return [k, v];
-        const t = v.trim();
-        return [k, t.length ? t : undefined];
-      }),
-    ) as UpdateUserDto;
+  const onSubmit = useCallback(
+    async (values: ProfileFormValues) => {
+      const cleaned: UpdateUserDto = Object.fromEntries(
+        Object.entries(values).map(([k, v]) => {
+          if (typeof v !== "string") return [k, v];
+          const t = v.trim();
+          return [k, t.length ? t : undefined];
+        }),
+      ) as UpdateUserDto;
 
-    await mutateAsync(cleaned);
-    toast.dismiss(PROFILE_TOAST_ID);
-  }
+      await mutateAsync(cleaned);
+      toast.dismiss(PROFILE_TOAST_ID);
+    },
+    [mutateAsync],
+  );
 
-  submitRef.current = form.handleSubmit(onSubmit);
+  useEffect(() => {
+    submitRef.current = form.handleSubmit(onSubmit);
+  }, [form, onSubmit]);
 
   useEffect(() => {
     if (isDirty) {
       toast("Unsaved changes", {
         id: PROFILE_TOAST_ID,
         duration: Infinity,
-        action: {
-          label: "Save",
-          onClick: () => submitRef.current(),
-        },
+        action: (
+          <div className="ml-auto flex items-center gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => form.reset()}
+            >
+              Reset
+            </Button>
+            <Button type="button" size="sm" onClick={() => submitRef.current()}>
+              Save
+            </Button>
+          </div>
+        ),
       });
     } else {
       toast.dismiss(PROFILE_TOAST_ID);
     }
-  }, [isDirty]);
+  }, [form, isDirty]);
 
   useEffect(() => {
     return () => {
@@ -221,7 +201,7 @@ export const ProfileForm = () => {
   return (
     <FormProvider {...form}>
       <Tabs defaultValue={USER_TABS.PERSONAL_INFO} className="gap-4">
-        <div className="flex items-center flex-col gap-4 rounded-2xl border bg-card/80 p-4 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 rounded-xl border bg-card/80 p-4 shadow-sm backdrop-blur sm:flex-row sm:items-center sm:justify-between sm:rounded-2xl">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Typography element="h3" as="h5">
@@ -279,17 +259,6 @@ export const ProfileForm = () => {
               </Card>
             </TabsContent>
           ))}
-
-          <div className="flex items-center justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={isPending || isLoading}
-              onClick={() => form.reset()}
-            >
-              Reset
-            </Button>
-          </div>
 
           {isError && (
             <p className="text-destructive text-sm">

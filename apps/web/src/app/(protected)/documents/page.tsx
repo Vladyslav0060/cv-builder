@@ -86,7 +86,7 @@ export default function Documents() {
         ]}
       />
 
-      <Container variant="fullMobileConstrainedBreakpointPadded" paddingY="sm">
+      <Container variant="constrainedBreakpointPadded" paddingY="sm">
         <div className="relative flex min-w-0 flex-col gap-6">
           <section className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.6fr)]">
             <Card className="border-border/60 bg-card/80 shadow-sm backdrop-blur">
@@ -121,7 +121,7 @@ export default function Documents() {
                 </div>
               </CardHeader>
 
-              <CardContent className="grid gap-3 pt-4 sm:grid-cols-2 xl:grid-cols-4">
+              <CardContent className="grid grid-cols-2 gap-3 pt-4 xl:grid-cols-4">
                 <div className="rounded-2xl border border-border/60 bg-muted/40 p-4">
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Total

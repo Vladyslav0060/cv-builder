@@ -120,16 +120,18 @@ function DocumentWizardContent({
     <div className="relative flex w-full min-w-0 max-w-3xl flex-col gap-4">
       <Card className="border-border/60 bg-card/85 shadow-sm backdrop-blur">
         <CardHeader className="space-y-3 border-b border-border/60 pb-5">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:gap-4">
             <div className="space-y-2">
-              <CardTitle className="text-2xl">New document</CardTitle>
+              <CardTitle className="text-xl sm:text-2xl">
+                New document
+              </CardTitle>
               <CardDescription className="max-w-2xl text-sm sm:text-base">
                 {creationMode === CreateDocumentDtoCreationMode.SCRATCH
                   ? "Fill in your own details step by step, then let AI draft the content for you."
                   : "Fill in your profile details first, then generate a document from the saved account data."}
               </CardDescription>
             </div>
-            <div className="rounded-2xl border border-border/60 bg-muted/40 px-4 py-2 text-right text-xs text-muted-foreground">
+            <div className="rounded-xl border border-border/60 bg-muted/40 px-3 py-1.5 text-left text-xs text-muted-foreground sm:rounded-2xl sm:px-4 sm:py-2 sm:text-right">
               <p className="text-nowrap">
                 Step {stepIndex + 1} of {steps.length}
               </p>
