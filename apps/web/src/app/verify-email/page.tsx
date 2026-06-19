@@ -58,7 +58,7 @@ export default function VerifyEmailPage() {
     if (code.length < 6) return;
     verify(code, {
       onSuccess: () => {
-        router.replace(ROUTES.DASHBOARD);
+        router.replace(ROUTES.HOME);
       },
     });
   }

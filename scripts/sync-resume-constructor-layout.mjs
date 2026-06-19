@@ -3,14 +3,22 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const rootDir = dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
-const source = join(rootDir, "shared/resume-constructor/resume-constructor-layout.ts");
-const destinations = [
-  join(rootDir, "apps/web/src/shared/resume-constructor-layout.ts"),
-  join(rootDir, "apps/api/src/shared/resume-constructor-layout.ts"),
+const sharedSrc = join(rootDir, "shared/resume-constructor");
+
+const files = [
+  "resume-constructor-data.ts",
+  "resume-constructor-layout.ts",
 ];
 
-for (const destination of destinations) {
-  mkdirSync(dirname(destination), { recursive: true });
-  copyFileSync(source, destination);
+const destDirs = [
+  join(rootDir, "apps/web/src/shared"),
+  join(rootDir, "apps/api/src/shared"),
+];
+
+for (const destDir of destDirs) {
+  mkdirSync(destDir, { recursive: true });
+  for (const file of files) {
+    copyFileSync(join(sharedSrc, file), join(destDir, file));
+  }
 }
 
