@@ -18,6 +18,7 @@ function toMeDto(
     lastName: user.lastName,
     avatarUrl: user.avatarUrl,
     role: user.role,
+    emailVerified: true, // EnrichedUserDto lacks this field; the real /auth/me response fills it in
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };

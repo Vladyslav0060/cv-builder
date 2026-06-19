@@ -7,6 +7,7 @@ import { GoogleStrategy } from './strategy/google.strategy';
 import { UserModule } from 'src/user/user.module';
 import { SessionSerializer } from './session.serializer';
 import { PrismaModule } from 'src/prisma/prisma.module';
+import { MailService } from './mail.service';
 
 @Module({
   imports: [
@@ -15,6 +16,6 @@ import { PrismaModule } from 'src/prisma/prisma.module';
     PrismaModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, GoogleStrategy, SessionSerializer],
+  providers: [AuthService, MailService, LocalStrategy, GoogleStrategy, SessionSerializer],
 })
 export class AuthModule {}

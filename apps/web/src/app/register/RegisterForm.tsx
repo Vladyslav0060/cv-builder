@@ -52,13 +52,17 @@ export default function RegisterForm({
       password: "",
       firstName: "",
       lastName: "",
+      role: "user",
     },
   });
   const { handleSubmit, control } = methods;
 
   const onSubmit: SubmitHandler<RegisterDto> = async (formData) => {
+    console.log("submit: ", formData);
     handleRegister({ ...formData, role: "user", avatarUrl: "" });
   };
+
+  console.log("methods.formState: ", methods.formState);
 
   return (
     <FormProvider {...methods}>
