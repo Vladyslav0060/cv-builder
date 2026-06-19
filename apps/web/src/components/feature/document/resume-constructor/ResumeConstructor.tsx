@@ -1068,7 +1068,7 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
 
           <section className="flex min-w-0 xl:w-[clamp(340px,30vw,460px)] xl:shrink-0">
             <div className="flex w-full flex-col xl:sticky xl:top-6 xl:h-[calc(100dvh-9.5rem)]">
-              <div className="shrink-0 flex flex-wrap items-center gap-2 pb-4">
+              <div className="hidden shrink-0 flex-wrap items-center gap-2 pb-4 xl:flex">
                 <Badge variant="secondary" className="gap-1.5">
                   <LayoutTemplate className="size-3.5" />
                   {resumeTemplates.find((t) => t.id === template)?.label ??
@@ -1090,12 +1090,13 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
                 </Badge>
               </div>
               <ResumePdfPreview
-                className="h-full w-full overflow-hidden"
+                className="hidden h-full w-full overflow-hidden xl:flex"
                 resume={resume}
                 template={template}
                 colorScheme={colorScheme}
                 isExporting={isExportingPdf}
                 onExport={() => downloadResumePdf()}
+                showFixedMobileActions
               />
             </div>
           </section>

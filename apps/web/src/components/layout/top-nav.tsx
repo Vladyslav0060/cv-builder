@@ -32,7 +32,7 @@ export function TopNav() {
         variant={"fullMobileConstrainedBreakpointPadded"}
         paddingY="none"
       >
-        <div className="flex h-14 items-center gap-3">
+        <div className="flex h-14 items-center gap-3 px-4 xl:px-0">
           <div className="flex gap-1 items-center">
             <ReadCvLogoIcon size={16} />
             <Link href={ROUTES.HOME} className="font-semibold">
