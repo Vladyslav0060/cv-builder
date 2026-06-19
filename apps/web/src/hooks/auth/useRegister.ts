@@ -2,6 +2,7 @@ import { authControllerSignUp } from "@/api/generated";
 import { CreateUserDto } from "@/api/generated.schemas";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export const useRegister = () => {
   const router = useRouter();
@@ -10,12 +11,15 @@ export const useRegister = () => {
       const response = await authControllerSignUp(data);
       return response.data;
     },
-    onSuccess: (data) => {
-      console.log(data);
-      router.push("/login");
+    onSuccess: () => {
+      router.push("/verify-email");
     },
-    onError: (error) => {
-      console.error(error);
+    onError: (error: any) => {
+      if (error?.response?.status === 409) {
+        toast.error("An account with this email already exists.");
+      } else {
+        toast.error("Registration failed. Please try again.");
+      }
     },
   });
   return {

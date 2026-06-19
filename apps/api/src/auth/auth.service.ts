@@ -30,24 +30,27 @@ export class AuthService {
   ) {}
 
   async register(createUserDto: CreateUserDto): Promise<User> {
-    const user = await this.userService.createUser(createUserDto);
-    const { credential, ...result } = user;
+    const { password, ...userFields } = createUserDto;
+    const passwordHash = await argon.hash(password);
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    await this.prisma.credential.update({
-      where: { userId: user.id },
-      data: { verifyToken: token, verifyTokenExpiresAt: expiresAt },
+    const user = await this.prisma.user.create({
+      data: {
+        ...userFields,
+        credential: {
+          create: { passwordHash, verifyCode: code, verifyCodeExpiresAt: expiresAt },
+        },
+      },
     });
 
     this.mailService
-      .sendVerificationEmail(user.email, token)
+      .sendVerificationEmail(user.email, code)
       .catch((err) =>
         this.logger.error('Failed to send verification email', err),
       );
 
-    return result;
+    return user;
   }
 
   async login({ email, password }: LoginDto): Promise<User> {
@@ -90,27 +93,33 @@ export class AuthService {
     });
   }
 
-  async verifyEmail(token: string): Promise<{ ok: boolean }> {
+  async verifyEmail(userId: string, code: string): Promise<{ ok: boolean }> {
     const credential = await this.prisma.credential.findUnique({
-      where: { verifyToken: token },
+      where: { userId },
     });
 
     if (!credential) {
-      throw new BadRequestException('Invalid verification token');
+      throw new BadRequestException('No pending verification found');
+    }
+    if (credential.emailVerified) {
+      return { ok: true };
+    }
+    if (!credential.verifyCode || credential.verifyCode !== code) {
+      throw new BadRequestException('Invalid verification code');
     }
     if (
-      !credential.verifyTokenExpiresAt ||
-      credential.verifyTokenExpiresAt < new Date()
+      !credential.verifyCodeExpiresAt ||
+      credential.verifyCodeExpiresAt < new Date()
     ) {
-      throw new BadRequestException('Verification token has expired');
+      throw new BadRequestException('Verification code has expired');
     }
 
     await this.prisma.credential.update({
       where: { id: credential.id },
       data: {
         emailVerified: true,
-        verifyToken: null,
-        verifyTokenExpiresAt: null,
+        verifyCode: null,
+        verifyCodeExpiresAt: null,
       },
     });
 
@@ -185,12 +194,12 @@ export class AuthService {
       return { ok: true };
     }
 
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
     await this.prisma.credential.update({
       where: { id: credential.id },
-      data: { verifyToken: token, verifyTokenExpiresAt: expiresAt },
+      data: { verifyCode: code, verifyCodeExpiresAt: expiresAt },
     });
 
     const user = await this.prisma.user.findUniqueOrThrow({
@@ -198,7 +207,7 @@ export class AuthService {
     });
 
     this.mailService
-      .sendVerificationEmail(user.email, token)
+      .sendVerificationEmail(user.email, code)
       .catch((err) =>
         this.logger.error('Failed to resend verification email', err),
       );

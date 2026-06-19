@@ -70,15 +70,23 @@ export class AuthController {
     },
   })
   @HttpCode(HttpStatus.CREATED)
-  signUp(@Body() createUserDto: CreateUserDto): any {
-    return this.authService.register(createUserDto);
+  async signUp(
+    @Req() req: any,
+    @Body() createUserDto: CreateUserDto,
+  ): Promise<any> {
+    const user = await this.authService.register(createUserDto);
+    await new Promise<void>((resolve, reject) =>
+      req.logIn(user, (err: any) => (err ? reject(err) : resolve())),
+    );
+    return user;
   }
 
   @Post('verify-email')
-  @ApiOperation({ summary: 'Verify email address with token from email link' })
+  @ApiOperation({ summary: 'Verify email address with 6-digit code' })
   @HttpCode(HttpStatus.OK)
-  verifyEmail(@Body() dto: VerifyEmailDto) {
-    return this.authService.verifyEmail(dto.token);
+  @UseGuards(AuthenticatedGuard)
+  verifyEmail(@Req() req: any, @Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(req.user.id, dto.code);
   }
 
   @Post('forgot-password')

@@ -9,19 +9,15 @@ import { EnrichedUser, enrichedUserSelect } from './user.select';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  async createUser(data: CreateUserDto): Promise<any> {
-    try {
-      const { password, ...user } = data;
-      const passwordHash = await argon2.hash(password);
-      return this.prisma.user.create({
-        data: {
-          ...user,
-          credential: { create: { passwordHash } },
-        },
-      });
-    } catch (error) {
-      console.error(error);
-    }
+  async createUser(data: CreateUserDto): Promise<User> {
+    const { password, ...user } = data;
+    const passwordHash = await argon2.hash(password);
+    return this.prisma.user.create({
+      data: {
+        ...user,
+        credential: { create: { passwordHash } },
+      },
+    });
   }
 
   async getUsers(params: {
