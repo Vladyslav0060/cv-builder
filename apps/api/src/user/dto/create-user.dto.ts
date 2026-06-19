@@ -5,14 +5,8 @@ import {
   IsEmail,
   MinLength,
   IsUrl,
-  IsEnum,
   IsOptional,
 } from 'class-validator';
-
-export enum UserRole {
-  ADMIN = 'admin',
-  USER = 'user',
-}
 
 export class CreateUserDto {
   @ApiProperty()
@@ -33,10 +27,6 @@ export class CreateUserDto {
   @IsOptional()
   @IsUrl()
   avatarUrl?: string;
-
-  @ApiProperty({ example: UserRole.USER })
-  @IsEnum(UserRole)
-  role: UserRole;
 
   @ApiProperty()
   @MinLength(6)

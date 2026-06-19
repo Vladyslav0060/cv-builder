@@ -8,14 +8,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Controller, useFormContext } from "react-hook-form";
 import { PERSONAL_NAME_FIELDS } from "./ProfileForm";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { UpdateUserDtoRole } from "@/api/generated.schemas";
 import { Textarea } from "@/components/ui/textarea";
 import { AvatarUploadInput } from "./AvatarUploadInput";
 import { useCurrentUser } from "@/hooks/auth/current-user";
@@ -104,36 +96,6 @@ export const PersonalInfoInputs = ({ isPending }: TabGroupProps) => {
         ))}
       </div>
 
-      <Controller
-        control={form.control}
-        name="role"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel>Role</FieldLabel>
-            <FieldContent>
-              <Select
-                value={field.value ?? ""}
-                onValueChange={(v) =>
-                  field.onChange(v ? (v as UpdateUserDtoRole) : undefined)
-                }
-                disabled={isPending}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={UpdateUserDtoRole.user}>User</SelectItem>
-                  <SelectItem value={UpdateUserDtoRole.admin}>Admin</SelectItem>
-                </SelectContent>
-              </Select>
-              <FieldDescription>
-                If your backend ignores this for non-admins, it’s safe to leave.
-              </FieldDescription>
-              <FieldError errors={fieldState.error ? [fieldState.error] : []} />
-            </FieldContent>
-          </Field>
-        )}
-      />
     </>
   );
 };

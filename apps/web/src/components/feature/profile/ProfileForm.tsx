@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
-import { UpdateUserDto, UpdateUserDtoRole } from "@/api/generated.schemas";
+import { UpdateUserDto } from "@/api/generated.schemas";
 import { useUpdateUser } from "@/hooks/auth/useUpdateUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -135,7 +135,6 @@ export const ProfileForm = () => {
       firstName: "",
       lastName: "",
       avatarUrl: "",
-      role: undefined,
       address: "",
       city: "",
       state: "",
@@ -162,7 +161,6 @@ export const ProfileForm = () => {
       firstName: user.firstName ?? "",
       lastName: user.lastName ?? "",
       avatarUrl: user.avatarUrl ?? "",
-      role: user.role ?? undefined,
       address: user.address ?? "",
       city: user.city ?? "",
       state: user.state ?? "",

@@ -1,10 +1,6 @@
-import { Controller, Get, Req, Session, UseGuards } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { AppService } from './app.service';
-import { AuthenticatedGuard } from './auth/guards/authenticated.guard';
 import { ApiOkResponse } from '@nestjs/swagger';
-import { Roles } from './auth/decorators/roles.decorator';
-import { RolesGuard } from './auth/guards/roles.guard';
-import { UserRole } from './user/dto/create-user.dto';
 
 @Controller()
 export class AppController {

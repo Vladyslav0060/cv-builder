@@ -4,13 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useMe } from "@/hooks/auth/useMe";
 
-export function AuthGate({
-  children,
-  adminOnly = false,
-}: {
-  children: React.ReactNode;
-  adminOnly?: boolean;
-}) {
+export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { data: me, isLoading } = useMe();
 
@@ -24,18 +18,12 @@ export function AuthGate({
 
     if (me.emailVerified === false) {
       router.replace("/verify-email");
-      return;
     }
-
-    if (adminOnly && me.role !== "admin") {
-      router.replace("/403");
-    }
-  }, [adminOnly, isLoading, me, router]);
+  }, [isLoading, me, router]);
 
   if (isLoading || me === undefined) return null;
   if (!me) return null;
   if (me.emailVerified === false) return null;
-  if (adminOnly && me.role !== "admin") return null;
 
   return <>{children}</>;
 }
