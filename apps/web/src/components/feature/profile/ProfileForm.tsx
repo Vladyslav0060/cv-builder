@@ -241,7 +241,7 @@ export const ProfileForm = () => {
             <div className="h-2 overflow-hidden rounded-full bg-muted">
               <div
                 className={cn(
-                  "h-full rounded-full bg-gradient-to-r from-emerald-400 via-lime-400 to-amber-300 transition-[width] duration-500 ease-out",
+                  "h-full rounded-full bg-linear-to-r from-emerald-400 via-lime-400 to-amber-300 transition-[width] duration-500 ease-out",
                   (user?.profileFilledPercentage ?? 0) === 100 &&
                     "from-emerald-500 via-emerald-400 to-emerald-300",
                 )}

@@ -26,7 +26,7 @@ export function DocumentAiLoader({
         transition={{ duration: 0.25, ease: "easeOut" }}
         className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-border/60 bg-card/90 shadow-2xl"
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.18),_transparent_36%),radial-gradient(circle_at_top_right,_rgba(234,179,8,0.14),_transparent_28%),linear-gradient(135deg,rgba(59,130,246,0.06),rgba(16,185,129,0.04))]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_36%),radial-gradient(circle_at_top_right,rgba(234,179,8,0.14),transparent_28%),linear-gradient(135deg,rgba(59,130,246,0.06),rgba(16,185,129,0.04))]" />
         <div className="relative p-8 sm:p-10">
           <div className="flex items-start gap-4">
             <div className="relative flex size-14 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-500">
@@ -80,9 +80,13 @@ export function DocumentAiLoader({
             </div>
             <div className="h-3 overflow-hidden rounded-full bg-muted">
               <motion.div
-                className="h-full w-2/3 rounded-full bg-gradient-to-r from-emerald-400 via-sky-400 to-amber-300"
+                className="h-full w-2/3 rounded-full bg-linear-to-r from-emerald-400 via-sky-400 to-amber-300"
                 animate={{ x: ["-35%", "110%"] }}
-                transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 1.6,
+                  ease: "easeInOut",
+                }}
               />
             </div>
           </div>

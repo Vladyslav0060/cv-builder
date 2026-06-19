@@ -16,7 +16,7 @@ import { ApiBody, ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { LoginDto } from './dto/login.dto';
 import { User } from 'generated/prisma/client';
 import { LocalAuthGuard } from './guards/local-auth.guard';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { LogoutResponseDto } from './dto/logout-response.dto';
 import { AuthenticatedGuard } from './guards/authenticated.guard';
 import { MeDto } from './dto/me.dto';

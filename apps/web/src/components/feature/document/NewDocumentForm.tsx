@@ -137,7 +137,7 @@ function DocumentWizardContent({
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-muted">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-lime-400 to-amber-300 transition-[width] duration-300 ease-out"
+              className="h-full rounded-full bg-linear-to-r from-emerald-400 via-lime-400 to-amber-300 transition-[width] duration-300 ease-out"
               style={{
                 width: `${Math.max(8, ((stepIndex + 1) / steps.length) * 100)}%`,
               }}

@@ -125,7 +125,7 @@
   }
   body {
     @apply h-full overflow-hidden text-foreground;
-    @apply bg-[radial-gradient(circle_at_top_left,_rgba(100,116,139,0.10),_transparent_28%),linear-gradient(180deg,_#f1f5f9_0%,_#e2e8f0_100%)];
+    @apply bg-[radial-gradient(circle_at_top_left,rgba(100,116,139,0.10),transparent_28%),linear-gradient(180deg,#f1f5f9_0%,#e2e8f0_100%)];
     @apply dark:bg-background dark:bg-none;
   }
 }

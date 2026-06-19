@@ -6,7 +6,7 @@ import { http } from "@/api/http";
 export const useVerifyEmail = () => {
   const queryClient = useQueryClient();
 
-  const { mutate, mutateAsync, isPending, isError, isSuccess } = useMutation({
+  const { mutate, mutateAsync, isPending, isError, isSuccess, error } = useMutation({
     mutationFn: async (code: string) => {
       const response = await http.post<{ ok: boolean }>("/auth/verify-email", {
         code,
@@ -18,5 +18,5 @@ export const useVerifyEmail = () => {
       queryClient.invalidateQueries({ queryKey: ["me"] });
     },
   });
-  return { mutate, mutateAsync, isPending, isError, isSuccess };
+  return { mutate, mutateAsync, isPending, isError, isSuccess, error };
 };

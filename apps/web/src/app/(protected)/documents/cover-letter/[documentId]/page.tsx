@@ -31,13 +31,13 @@ export const DocumentPage = ({
       />
       <Container variant={"fullMobileConstrainedBreakpointPadded"}>
         {document === undefined ? (
-          <div className="min-h-[600px] p-4 text-sm text-muted-foreground">
+          <div className="min-h-150 p-4 text-sm text-muted-foreground">
             Loading document...
           </div>
         ) : document ? (
           <Editor initialMarkdown={document.content ?? undefined} />
         ) : (
-          <div className="min-h-[600px] p-4 text-sm text-muted-foreground">
+          <div className="min-h-150 p-4 text-sm text-muted-foreground">
             Document could not be loaded.
           </div>
         )}
