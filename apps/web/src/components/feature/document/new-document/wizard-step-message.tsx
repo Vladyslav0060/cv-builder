@@ -1,13 +1,19 @@
-import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardTitle,
+} from "@/components/ui/card";
 
 export function WizardStepMessage({
   title,
   description,
-  continueLabel,
+  footer,
 }: {
   title: string;
   description: string;
-  continueLabel: string;
+  footer?: React.ReactNode;
 }) {
   return (
     <Card className="border-border/60 bg-card/85 shadow-sm backdrop-blur">
@@ -18,10 +24,10 @@ export function WizardStepMessage({
             {description}
           </CardDescription>
         </div>
-        <p className="rounded-2xl border border-border/60 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-          {continueLabel}
-        </p>
       </CardContent>
+      {footer ? (
+        <CardFooter className="justify-between gap-3">{footer}</CardFooter>
+      ) : null}
     </Card>
   );
 }

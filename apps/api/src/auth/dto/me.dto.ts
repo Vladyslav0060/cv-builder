@@ -25,6 +25,9 @@ export class MeDto {
   role: string;
 
   @ApiProperty()
+  emailVerified: boolean;
+
+  @ApiProperty()
   createdAt: Date;
 
   @ApiProperty()

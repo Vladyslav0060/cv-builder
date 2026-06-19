@@ -128,12 +128,12 @@ export default function LoginForm({
                         >
                           Password
                         </FieldLabel>
-                        <a
-                          href="#"
+                        <Link
+                          href={ROUTES.FORGOT_PASSWORD}
                           className="ml-auto text-sm underline-offset-4 hover:underline"
                         >
                           Forgot your password?
-                        </a>
+                        </Link>
                       </div>
                       <Input
                         placeholder="Password"

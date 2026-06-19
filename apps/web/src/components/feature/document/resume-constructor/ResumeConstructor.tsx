@@ -11,6 +11,8 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { toast } from "sonner";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,6 +55,55 @@ import {
 
 import { ResumePdfPreview } from "./ResumePdfPreview";
 
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const PAGE_HEADER = {
+  badge: "Resume constructor",
+  title: "Professional CV builder",
+  description:
+    "Edit structured resume data on the left and keep the A4 PDF preview in sync on the right. The PDF renderer is isolated so a future Puppeteer export can reuse the same document component.",
+} as const;
+
+const PERSONAL_INFO_FIELDS: Array<{
+  key: keyof ResumeData["personalInfo"];
+  label: string;
+}> = [
+  { key: "fullName", label: "Full name" },
+  { key: "title", label: "Headline" },
+  { key: "email", label: "Email" },
+  { key: "phone", label: "Phone" },
+  { key: "location", label: "Location" },
+  { key: "website", label: "Website" },
+  { key: "linkedin", label: "LinkedIn" },
+  { key: "github", label: "GitHub" },
+];
+
+const LIST_EDITOR_CONFIGS: Array<{
+  key: "skills" | "languages";
+  label: string;
+  icon: ReactNode;
+  placeholder: string;
+}> = [
+  {
+    key: "skills",
+    label: "Skills",
+    icon: (
+      <Badge variant="secondary" className="h-6 gap-1.5 px-2">
+        <span>01</span>
+      </Badge>
+    ),
+    placeholder: "Strategic storytelling",
+  },
+  {
+    key: "languages",
+    label: "Languages",
+    icon: <Languages className="size-4 text-muted-foreground" />,
+    placeholder: "English",
+  },
+];
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 function createId(prefix: string) {
   return `${prefix}-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`}`;
 }
@@ -68,34 +119,10 @@ function linesToText(lines: string[]) {
   return lines.join("\n");
 }
 
-function updateExperience(
-  list: ResumeExperience[],
+function updateById<T extends { id: string }>(
+  list: T[],
   id: string,
-  updater: (entry: ResumeExperience) => ResumeExperience,
-) {
-  return list.map((entry) => (entry.id === id ? updater(entry) : entry));
-}
-
-function updateEducation(
-  list: ResumeEducation[],
-  id: string,
-  updater: (entry: ResumeEducation) => ResumeEducation,
-) {
-  return list.map((entry) => (entry.id === id ? updater(entry) : entry));
-}
-
-function updateProject(
-  list: ResumeProject[],
-  id: string,
-  updater: (entry: ResumeProject) => ResumeProject,
-) {
-  return list.map((entry) => (entry.id === id ? updater(entry) : entry));
-}
-
-function updateCertification(
-  list: ResumeCertification[],
-  id: string,
-  updater: (entry: ResumeCertification) => ResumeCertification,
+  updater: (entry: T) => T,
 ) {
   return list.map((entry) => (entry.id === id ? updater(entry) : entry));
 }
@@ -110,6 +137,8 @@ function splitTags(value: string) {
 function tagsToText(tags: string[]) {
   return tags.join(", ");
 }
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function TagsInput({
   value,
@@ -247,7 +276,7 @@ function ResumeEntryCard({
 }) {
   return (
     <Card className="border-border/60 bg-card/70 shadow-sm">
-      <CardHeader className="flex-row items-start justify-between gap-3 border-b border-border/50 pb-4">
+      <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-border/50 pb-4">
         <div>
           <CardTitle className="text-sm">
             {entry.position || "New role"}
@@ -353,7 +382,7 @@ function EducationEntryCard({
 }) {
   return (
     <Card className="border-border/60 bg-card/70 shadow-sm">
-      <CardHeader className="flex-row items-start justify-between gap-3 border-b border-border/50 pb-4">
+      <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-border/50 pb-4">
         <div>
           <CardTitle className="text-sm">
             {entry.school || "New school"}
@@ -423,7 +452,7 @@ function ProjectEntryCard({
 }) {
   return (
     <Card className="border-border/60 bg-card/70 shadow-sm">
-      <CardHeader className="flex-row items-start justify-between gap-3 border-b border-border/50 pb-4">
+      <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-border/50 pb-4">
         <div>
           <CardTitle className="text-sm">
             {entry.name || "New project"}
@@ -477,12 +506,7 @@ function ProjectEntryCard({
           <TagsInput
             value={entry.technologies ?? []}
             placeholder="React, TypeScript, Node.js"
-            onChange={(tags) =>
-              onChange({
-                ...entry,
-                technologies: tags,
-              })
-            }
+            onChange={(tags) => onChange({ ...entry, technologies: tags })}
           />
         </Field>
 
@@ -514,7 +538,7 @@ function CertificationEntryCard({
 }) {
   return (
     <Card className="border-border/60 bg-card/70 shadow-sm">
-      <CardHeader className="flex-row items-start justify-between gap-3 border-b border-border/50 pb-4">
+      <CardHeader className="flex flex-row items-start justify-between gap-3 border-b border-border/50 pb-4">
         <div>
           <CardTitle className="text-sm">
             {entry.name || "New certification"}
@@ -558,13 +582,58 @@ function CertificationEntryCard({
   );
 }
 
+type SectionConfig = {
+  key: string;
+  icon?: ReactNode;
+  title: string;
+  description: string;
+  addLabel: string;
+  onAdd: () => void;
+  count: number;
+  children: ReactNode;
+};
+
+function SectionCard({
+  icon,
+  title,
+  description,
+  addLabel,
+  onAdd,
+  count,
+  children,
+}: Omit<SectionConfig, "key">) {
+  return (
+    <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-border/50 pb-4">
+        <div>
+          <CardTitle
+            className={cn("text-base", icon && "flex items-center gap-2")}
+          >
+            {icon}
+            {title}
+          </CardTitle>
+          <CardDescription>{description}</CardDescription>
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={onAdd}>
+          <Plus className="size-4" />
+          {addLabel}
+        </Button>
+      </CardHeader>
+      <CardContent className={count ? "space-y-4 pt-4" : "hidden"}>
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+
+const SAVE_TOAST_ID = "resume-unsaved-changes";
+
 export function ResumeConstructor({ documentId }: { documentId?: string } = {}) {
   const { data: existingResume } = useGetResume(documentId ?? "");
-  console.log({existingResume})
   const { data: userProfile } = useEnrichedMe();
-  const { mutate: saveResume, isPending: isSavingResume } = useSaveResume(
-    documentId ?? "",
-  );
+  const { mutate: saveResume } = useSaveResume(documentId ?? "");
 
   const [resume, setResume] = useState<ResumeData>(defaultResumeData);
   const [template, setTemplate] = useState<ResumeTemplateId>("classic");
@@ -615,24 +684,68 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
     [colorScheme],
   );
 
+  const exportPayloadRef = useRef(exportPayload);
+  useEffect(() => {
+    exportPayloadRef.current = exportPayload;
+  }, [exportPayload]);
+
+  const savedPayloadRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!documentId) return;
+    if (existingResume === undefined) return;
+    if (existingResume === null && !profileApplied) return;
+
+    const payloadStr = JSON.stringify(exportPayload);
+
+    if (savedPayloadRef.current === null) {
+      savedPayloadRef.current = payloadStr;
+      return;
+    }
+
+    if (payloadStr !== savedPayloadRef.current) {
+      toast("Unsaved changes", {
+        id: SAVE_TOAST_ID,
+        duration: Infinity,
+        action: {
+          label: "Save",
+          onClick: () => {
+            const payload = exportPayloadRef.current;
+            saveResume(payload, {
+              onSuccess: (saved) => {
+                savedPayloadRef.current = JSON.stringify(saved);
+                toast.dismiss(SAVE_TOAST_ID);
+                toast.success("Resume saved");
+              },
+            });
+          },
+        },
+      });
+    } else {
+      toast.dismiss(SAVE_TOAST_ID);
+    }
+  }, [exportPayload, existingResume, documentId, profileApplied, saveResume]);
+
+  useEffect(() => {
+    return () => {
+      toast.dismiss(SAVE_TOAST_ID);
+    };
+  }, []);
+
   const setPersonalInfo = (
     key: keyof ResumeData["personalInfo"],
     value: string,
   ) => {
     setResume((current) => ({
       ...current,
-      personalInfo: {
-        ...current.personalInfo,
-        [key]: value,
-      },
+      personalInfo: { ...current.personalInfo, [key]: value },
     }));
   };
 
-  const addExperience = () => {
-    setResume((current) => ({
-      ...current,
+  const addExperience = () =>
+    setResume((c) => ({
+      ...c,
       experience: [
-        ...current.experience,
+        ...c.experience,
         {
           id: createId("exp"),
           company: "",
@@ -645,13 +758,12 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
         },
       ],
     }));
-  };
 
-  const addEducation = () => {
-    setResume((current) => ({
-      ...current,
+  const addEducation = () =>
+    setResume((c) => ({
+      ...c,
       education: [
-        ...current.education,
+        ...c.education,
         {
           id: createId("edu"),
           school: "",
@@ -662,13 +774,12 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
         },
       ],
     }));
-  };
 
-  const addProject = () => {
-    setResume((current) => ({
-      ...current,
+  const addProject = () =>
+    setResume((c) => ({
+      ...c,
       projects: [
-        ...(current.projects ?? []),
+        ...(c.projects ?? []),
         {
           id: createId("proj"),
           name: "",
@@ -680,446 +791,282 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
         },
       ],
     }));
-  };
 
-  const addCertification = () => {
-    setResume((current) => ({
-      ...current,
+  const addCertification = () =>
+    setResume((c) => ({
+      ...c,
       certifications: [
-        ...(current.certifications ?? []),
-        {
-          id: createId("cert"),
-          name: "",
-          issuer: "",
-          date: "",
-        },
+        ...(c.certifications ?? []),
+        { id: createId("cert"), name: "", issuer: "", date: "" },
       ],
     }));
-  };
+
+  const sections: SectionConfig[] = [
+    {
+      key: "experience",
+      icon: <BriefcaseBusiness className="size-4" />,
+      title: "Experience",
+      description: "Highlight impact, scope, and progression.",
+      addLabel: "Add role",
+      onAdd: addExperience,
+      count: resume.experience.length,
+      children: resume.experience.map((entry) => (
+        <ResumeEntryCard
+          key={entry.id}
+          entry={entry}
+          onChange={(next) =>
+            setResume((c) => ({
+              ...c,
+              experience: updateById(c.experience, entry.id, () => next),
+            }))
+          }
+          onRemove={() =>
+            setResume((c) => ({
+              ...c,
+              experience: c.experience.filter((x) => x.id !== entry.id),
+            }))
+          }
+        />
+      )),
+    },
+    {
+      key: "projects",
+      icon: <FolderGit2 className="size-4" />,
+      title: "Projects",
+      description: "Showcase work that demonstrates real-world impact.",
+      addLabel: "Add project",
+      onAdd: addProject,
+      count: (resume.projects ?? []).length,
+      children: (resume.projects ?? []).map((entry) => (
+        <ProjectEntryCard
+          key={entry.id}
+          entry={entry}
+          onChange={(next) =>
+            setResume((c) => ({
+              ...c,
+              projects: updateById(c.projects ?? [], entry.id, () => next),
+            }))
+          }
+          onRemove={() =>
+            setResume((c) => ({
+              ...c,
+              projects: (c.projects ?? []).filter((x) => x.id !== entry.id),
+            }))
+          }
+        />
+      )),
+    },
+    {
+      key: "education",
+      title: "Education",
+      description: "Keep it short and professional.",
+      addLabel: "Add degree",
+      onAdd: addEducation,
+      count: resume.education.length,
+      children: resume.education.map((entry) => (
+        <EducationEntryCard
+          key={entry.id}
+          entry={entry}
+          onChange={(next) =>
+            setResume((c) => ({
+              ...c,
+              education: updateById(c.education, entry.id, () => next),
+            }))
+          }
+          onRemove={() =>
+            setResume((c) => ({
+              ...c,
+              education: c.education.filter((x) => x.id !== entry.id),
+            }))
+          }
+        />
+      )),
+    },
+    {
+      key: "certifications",
+      icon: <Award className="size-4" />,
+      title: "Certifications",
+      description: "Add credentials that build trust with recruiters.",
+      addLabel: "Add certification",
+      onAdd: addCertification,
+      count: (resume.certifications ?? []).length,
+      children: (resume.certifications ?? []).map((entry) => (
+        <CertificationEntryCard
+          key={entry.id}
+          entry={entry}
+          onChange={(next) =>
+            setResume((c) => ({
+              ...c,
+              certifications: updateById(
+                c.certifications ?? [],
+                entry.id,
+                () => next,
+              ),
+            }))
+          }
+          onRemove={() =>
+            setResume((c) => ({
+              ...c,
+              certifications: (c.certifications ?? []).filter(
+                (x) => x.id !== entry.id,
+              ),
+            }))
+          }
+        />
+      )),
+    },
+  ];
 
   return (
-    <div className="flex min-h-screen flex-col overflow-x-hidden">
+    <div className="flex min-h-screen flex-col overflow-x-clip">
       <div className="mx-auto grid min-h-full w-full min-w-0 max-w-screen-xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_clamp(340px,30vw,460px)] xl:items-start">
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_clamp(340px,30vw,460px)]">
           <section className="flex min-w-0 flex-col">
             <div className="shrink-0 mb-6 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div className="space-y-2">
                 <Badge variant="outline" className="w-fit">
-                  Resume constructor
+                  {PAGE_HEADER.badge}
                 </Badge>
                 <div>
                   <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-                    Professional CV builder
+                    {PAGE_HEADER.title}
                   </h1>
                   <p className="max-w-2xl text-sm text-muted-foreground">
-                    Edit structured resume data on the left and keep the A4 PDF
-                    preview in sync on the right. The PDF renderer is isolated
-                    so a future Puppeteer export can reuse the same document
-                    component.
+                    {PAGE_HEADER.description}
                   </p>
                 </div>
               </div>
-              {documentId ? (
-                <Button
-                  type="button"
-                  onClick={() => saveResume(exportPayload)}
-                  disabled={isSavingResume}
-                >
-                  {isSavingResume ? "Saving..." : "Save resume"}
-                </Button>
-              ) : null}
             </div>
 
-            <div>
-              <div className="space-y-6">
-                <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
-                  <CardHeader className="border-b border-border/50 pb-4">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <LayoutTemplate className="size-4" />
-                      Layout and palette
-                    </CardTitle>
-                    <CardDescription>
-                      Switch between two professional templates and update the
-                      accent color family.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-5 pt-4">
-                    <Tabs
-                      value={template}
-                      onValueChange={(value) =>
-                        setTemplate(value as ResumeTemplateId)
-                      }
-                    >
-                      <TabsList className="grid w-full grid-cols-2">
-                        {resumeTemplates.map((option) => (
-                          <TabsTrigger key={option.id} value={option.id}>
-                            {option.label}
-                          </TabsTrigger>
-                        ))}
-                      </TabsList>
+            <div className="space-y-6">
+              <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
+                <CardHeader className="border-b border-border/50 pb-4">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <LayoutTemplate className="size-4" />
+                    Layout and palette
+                  </CardTitle>
+                  <CardDescription>
+                    Switch between two professional templates and update the
+                    accent color family.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5 pt-4">
+                  <Tabs
+                    value={template}
+                    onValueChange={(value) =>
+                      setTemplate(value as ResumeTemplateId)
+                    }
+                  >
+                    <TabsList className="grid w-full grid-cols-2">
                       {resumeTemplates.map((option) => (
-                        <TabsContent
-                          key={option.id}
-                          value={option.id}
-                          className="mt-3"
-                        >
-                          <div className="rounded-xl border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
-                            {option.description}
-                          </div>
-                        </TabsContent>
+                        <TabsTrigger key={option.id} value={option.id}>
+                          {option.label}
+                        </TabsTrigger>
                       ))}
-                    </Tabs>
-
-                    <Field label="Color scheme">
-                      <Select
-                        value={colorScheme}
-                        onValueChange={(value) =>
-                          setColorScheme(value as ResumeColorSchemeId)
-                        }
+                    </TabsList>
+                    {resumeTemplates.map((option) => (
+                      <TabsContent
+                        key={option.id}
+                        value={option.id}
+                        className="mt-3"
                       >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Choose a color scheme" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {resumeColorSchemes.map((scheme) => (
-                            <SelectItem key={scheme.id} value={scheme.id}>
-                              {scheme.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  </CardContent>
-                </Card>
+                        <div className="rounded-xl border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
+                          {option.description}
+                        </div>
+                      </TabsContent>
+                    ))}
+                  </Tabs>
 
-                <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
-                  <CardHeader className="border-b border-border/50 pb-4">
-                    <CardTitle className="text-base">
-                      Personal information
-                    </CardTitle>
-                    <CardDescription>
-                      Used for the header, contact row, and linked metadata.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="grid gap-4 pt-4 md:grid-cols-2">
-                    <Field label="Full name">
-                      <Input
-                        value={resume.personalInfo.fullName}
-                        onChange={(event) =>
-                          setPersonalInfo("fullName", event.target.value)
-                        }
-                      />
-                    </Field>
-                    <Field label="Headline">
-                      <Input
-                        value={resume.personalInfo.title}
-                        onChange={(event) =>
-                          setPersonalInfo("title", event.target.value)
-                        }
-                      />
-                    </Field>
-                    <Field label="Email">
-                      <Input
-                        value={resume.personalInfo.email}
-                        onChange={(event) =>
-                          setPersonalInfo("email", event.target.value)
-                        }
-                      />
-                    </Field>
-                    <Field label="Phone">
-                      <Input
-                        value={resume.personalInfo.phone ?? ""}
-                        onChange={(event) =>
-                          setPersonalInfo("phone", event.target.value)
-                        }
-                      />
-                    </Field>
-                    <Field label="Location">
-                      <Input
-                        value={resume.personalInfo.location ?? ""}
-                        onChange={(event) =>
-                          setPersonalInfo("location", event.target.value)
-                        }
-                      />
-                    </Field>
-                    <Field label="Website">
-                      <Input
-                        value={resume.personalInfo.website ?? ""}
-                        onChange={(event) =>
-                          setPersonalInfo("website", event.target.value)
-                        }
-                      />
-                    </Field>
-                    <Field label="LinkedIn">
-                      <Input
-                        value={resume.personalInfo.linkedin ?? ""}
-                        onChange={(event) =>
-                          setPersonalInfo("linkedin", event.target.value)
-                        }
-                      />
-                    </Field>
-                    <Field label="GitHub">
-                      <Input
-                        value={resume.personalInfo.github ?? ""}
-                        onChange={(event) =>
-                          setPersonalInfo("github", event.target.value)
-                        }
-                      />
-                    </Field>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
-                  <CardHeader className="border-b border-border/50 pb-4">
-                    <CardTitle className="text-base">Summary</CardTitle>
-                    <CardDescription>
-                      One concise paragraph that frames the profile.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-4">
-                    <Textarea
-                      value={resume.summary ?? ""}
-                      onChange={(event) =>
-                        setResume((current) => ({
-                          ...current,
-                          summary: event.target.value,
-                        }))
+                  <Field label="Color scheme">
+                    <Select
+                      value={colorScheme}
+                      onValueChange={(value) =>
+                        setColorScheme(value as ResumeColorSchemeId)
                       }
-                      placeholder="Experienced product designer with a track record of..."
-                      className="min-h-28"
-                    />
-                  </CardContent>
-                </Card>
-
-                <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
-                  <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border/50 pb-4">
-                    <div>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <BriefcaseBusiness className="size-4" />
-                        Experience
-                      </CardTitle>
-                      <CardDescription>
-                        Highlight impact, scope, and progression.
-                      </CardDescription>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addExperience}
                     >
-                      <Plus className="size-4" />
-                      Add role
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="space-y-4 pt-4">
-                    {resume.experience.map((entry) => (
-                      <ResumeEntryCard
-                        key={entry.id}
-                        entry={entry}
-                        onChange={(next) =>
-                          setResume((current) => ({
-                            ...current,
-                            experience: updateExperience(
-                              current.experience,
-                              entry.id,
-                              () => next,
-                            ),
-                          }))
-                        }
-                        onRemove={() =>
-                          setResume((current) => ({
-                            ...current,
-                            experience: current.experience.filter(
-                              (item) => item.id !== entry.id,
-                            ),
-                          }))
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Choose a color scheme" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {resumeColorSchemes.map((scheme) => (
+                          <SelectItem key={scheme.id} value={scheme.id}>
+                            {scheme.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
+                <CardHeader className="border-b border-border/50 pb-4">
+                  <CardTitle className="text-base">
+                    Personal information
+                  </CardTitle>
+                  <CardDescription>
+                    Used for the header, contact row, and linked metadata.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4 pt-4 md:grid-cols-2">
+                  {PERSONAL_INFO_FIELDS.map(({ key, label }) => (
+                    <Field key={key} label={label}>
+                      <Input
+                        value={resume.personalInfo[key] ?? ""}
+                        onChange={(event) =>
+                          setPersonalInfo(key, event.target.value)
                         }
                       />
-                    ))}
-                  </CardContent>
-                </Card>
+                    </Field>
+                  ))}
+                </CardContent>
+              </Card>
 
-                <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
-                  <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border/50 pb-4">
-                    <div>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <FolderGit2 className="size-4" />
-                        Projects
-                      </CardTitle>
-                      <CardDescription>
-                        Showcase work that demonstrates real-world impact.
-                      </CardDescription>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addProject}
-                    >
-                      <Plus className="size-4" />
-                      Add project
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="space-y-4 pt-4">
-                    {(resume.projects ?? []).map((entry) => (
-                      <ProjectEntryCard
-                        key={entry.id}
-                        entry={entry}
-                        onChange={(next) =>
-                          setResume((current) => ({
-                            ...current,
-                            projects: updateProject(
-                              current.projects ?? [],
-                              entry.id,
-                              () => next,
-                            ),
-                          }))
-                        }
-                        onRemove={() =>
-                          setResume((current) => ({
-                            ...current,
-                            projects: (current.projects ?? []).filter(
-                              (item) => item.id !== entry.id,
-                            ),
-                          }))
-                        }
-                      />
-                    ))}
-                  </CardContent>
-                </Card>
-
-                <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
-                  <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border/50 pb-4">
-                    <div>
-                      <CardTitle className="text-base">Education</CardTitle>
-                      <CardDescription>
-                        Keep it short and professional.
-                      </CardDescription>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addEducation}
-                    >
-                      <Plus className="size-4" />
-                      Add degree
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="space-y-4 pt-4">
-                    {resume.education.map((entry) => (
-                      <EducationEntryCard
-                        key={entry.id}
-                        entry={entry}
-                        onChange={(next) =>
-                          setResume((current) => ({
-                            ...current,
-                            education: updateEducation(
-                              current.education,
-                              entry.id,
-                              () => next,
-                            ),
-                          }))
-                        }
-                        onRemove={() =>
-                          setResume((current) => ({
-                            ...current,
-                            education: current.education.filter(
-                              (item) => item.id !== entry.id,
-                            ),
-                          }))
-                        }
-                      />
-                    ))}
-                  </CardContent>
-                </Card>
-
-                <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
-                  <CardHeader className="flex-row items-center justify-between gap-3 border-b border-border/50 pb-4">
-                    <div>
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Award className="size-4" />
-                        Certifications
-                      </CardTitle>
-                      <CardDescription>
-                        Add credentials that build trust with recruiters.
-                      </CardDescription>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addCertification}
-                    >
-                      <Plus className="size-4" />
-                      Add certification
-                    </Button>
-                  </CardHeader>
-                  <CardContent className="space-y-4 pt-4">
-                    {(resume.certifications ?? []).map((entry) => (
-                      <CertificationEntryCard
-                        key={entry.id}
-                        entry={entry}
-                        onChange={(next) =>
-                          setResume((current) => ({
-                            ...current,
-                            certifications: updateCertification(
-                              current.certifications ?? [],
-                              entry.id,
-                              () => next,
-                            ),
-                          }))
-                        }
-                        onRemove={() =>
-                          setResume((current) => ({
-                            ...current,
-                            certifications: (current.certifications ?? []).filter(
-                              (item) => item.id !== entry.id,
-                            ),
-                          }))
-                        }
-                      />
-                    ))}
-                  </CardContent>
-                </Card>
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <ListEditor
-                    label="Skills"
-                    icon={
-                      <Badge variant="secondary" className="h-6 gap-1.5 px-2">
-                        <span>01</span>
-                      </Badge>
-                    }
-                    values={resume.skills}
-                    onChange={(next) =>
-                      setResume((current) => ({ ...current, skills: next }))
-                    }
-                    placeholder="Strategic storytelling"
-                  />
-
-                  <ListEditor
-                    label="Languages"
-                    icon={
-                      <Languages className="size-4 text-muted-foreground" />
-                    }
-                    values={resume.languages ?? []}
-                    onChange={(next) =>
+              <Card className="border-border/60 bg-card/75 shadow-sm backdrop-blur">
+                <CardHeader className="border-b border-border/50 pb-4">
+                  <CardTitle className="text-base">Summary</CardTitle>
+                  <CardDescription>
+                    One concise paragraph that frames the profile.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <Textarea
+                    value={resume.summary ?? ""}
+                    onChange={(event) =>
                       setResume((current) => ({
                         ...current,
-                        languages: next,
+                        summary: event.target.value,
                       }))
                     }
-                    placeholder="English"
+                    placeholder="Experienced product designer with a track record of..."
+                    className="min-h-28"
                   />
-                </div>
+                </CardContent>
+              </Card>
+
+              {sections.map(({ key, ...section }) => (
+                <SectionCard key={key} {...section} />
+              ))}
+
+              <div className="grid gap-6 md:grid-cols-2">
+                {LIST_EDITOR_CONFIGS.map(({ key, label, icon, placeholder }) => (
+                  <ListEditor
+                    key={key}
+                    label={label}
+                    icon={icon}
+                    placeholder={placeholder}
+                    values={(resume[key] ?? []) as string[]}
+                    onChange={(next) =>
+                      setResume((c) => ({ ...c, [key]: next }))
+                    }
+                  />
+                ))}
               </div>
             </div>
           </section>
 
-          <section className="flex min-w-0 self-start xl:w-[clamp(340px,30vw,460px)] xl:shrink-0">
-            <div className="flex w-full flex-col xl:sticky xl:top-32 xl:h-[calc(100dvh-11rem)]">
+          <section className="flex min-w-0 xl:w-[clamp(340px,30vw,460px)] xl:shrink-0">
+            <div className="flex w-full flex-col xl:sticky xl:top-6 xl:h-[calc(100dvh-9.5rem)]">
               <div className="shrink-0 flex flex-wrap items-center gap-2 pb-4">
                 <Badge variant="secondary" className="gap-1.5">
                   <LayoutTemplate className="size-3.5" />
@@ -1142,11 +1089,6 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
                   {selectedScheme.label}
                 </Badge>
               </div>
-              {/* <PreviewSurface
-                resume={resume}
-                template={template}
-                colorScheme={colorScheme}
-              /> */}
               <ResumePdfPreview
                 className="h-full w-full overflow-hidden"
                 resume={resume}

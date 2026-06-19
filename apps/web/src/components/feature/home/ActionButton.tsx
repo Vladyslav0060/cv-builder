@@ -1,24 +1,23 @@
 "use client";
 
-import { ROUTES } from "@/common/routes";
-import { useMe } from "@/hooks/auth/useMe";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+
+import { ROUTES } from "@/common/routes";
+import { Button } from "@/components/ui/button";
+import { useMe } from "@/hooks/auth/useMe";
 
 export const ActionButton = () => {
   const { data: me } = useMe();
-  return me?.isAuthenticated ? (
-    <Link
-      href={ROUTES.NEW_DOCUMENT}
-      className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-primary text-white font-semibold shadow-lg hover:shadow-green-500/30 transition-all duration-200 text-lg"
-    >
-      Get Started
-    </Link>
-  ) : (
-    <Link
-      href={ROUTES.LOGIN}
-      className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-primary text-white font-semibold shadow-lg hover:shadow-green-500/30 transition-all duration-200 text-lg"
-    >
-      Sign in
-    </Link>
+  const href = me?.isAuthenticated ? ROUTES.NEW_DOCUMENT : ROUTES.LOGIN;
+  const label = me?.isAuthenticated ? "Create your resume" : "Get started free";
+
+  return (
+    <Button asChild size="lg" className="h-11 rounded-full px-6 text-base">
+      <Link href={href}>
+        {label}
+        <ArrowRight className="size-4" />
+      </Link>
+    </Button>
   );
 };

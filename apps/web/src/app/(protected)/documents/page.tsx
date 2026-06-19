@@ -213,7 +213,9 @@ export default function Documents() {
                       variant="outline"
                       className="w-full justify-between"
                       onClick={() =>
-                        router.push(`${ROUTES.DOCUMENTS}/${latestDocument.id}`)
+                        router.push(
+                          `${ROUTES.DOCUMENTS}/${latestDocument.type.toLowerCase()}/${latestDocument.id}`,
+                        )
                       }
                     >
                       Open latest document

@@ -9,6 +9,7 @@ export function toMeDto(user: SafeUser): MeDto {
     lastName: user.lastName ?? '',
     avatarUrl: user.avatarUrl ?? '',
     role: user.role,
+    emailVerified: user.credential?.emailVerified ?? true,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };

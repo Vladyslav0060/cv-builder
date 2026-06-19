@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer';
 import { existsSync, readdirSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import type {
@@ -13,6 +14,25 @@ let browserPromise: Promise<
   Awaited<ReturnType<typeof puppeteer.launch>>
 > | null = null;
 
+const CHROME_BINARY_SUFFIXES = [
+  ['chrome-linux64', 'chrome'],
+  [
+    'chrome-mac-arm64',
+    'Google Chrome for Testing.app',
+    'Contents',
+    'MacOS',
+    'Google Chrome for Testing',
+  ],
+  [
+    'chrome-mac-x64',
+    'Google Chrome for Testing.app',
+    'Contents',
+    'MacOS',
+    'Google Chrome for Testing',
+  ],
+  ['chrome-win64', 'chrome.exe'],
+];
+
 function findChromeExecutable(cacheDir: string) {
   const chromeRoot = join(cacheDir, 'chrome');
 
@@ -25,15 +45,12 @@ function findChromeExecutable(cacheDir: string) {
       continue;
     }
 
-    const binaryPath = join(
-      chromeRoot,
-      entry.name,
-      'chrome-linux64',
-      'chrome',
-    );
+    for (const suffix of CHROME_BINARY_SUFFIXES) {
+      const binaryPath = join(chromeRoot, entry.name, ...suffix);
 
-    if (existsSync(binaryPath)) {
-      return binaryPath;
+      if (existsSync(binaryPath)) {
+        return binaryPath;
+      }
     }
   }
 
@@ -49,6 +66,7 @@ function resolveChromeExecutablePath() {
     process.env.PUPPETEER_CACHE_DIR,
     resolve(process.cwd(), '.cache', 'puppeteer'),
     resolve(process.cwd(), 'apps', 'api', '.cache', 'puppeteer'),
+    resolve(homedir(), '.cache', 'puppeteer'),
     '/opt/render/.cache/puppeteer',
     '/opt/render/project/src/.cache/puppeteer',
   ].filter((cacheDir): cacheDir is string => !!cacheDir);

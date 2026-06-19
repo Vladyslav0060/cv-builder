@@ -9,6 +9,7 @@ export const safeUserSelect = {
   role: true,
   createdAt: true,
   updatedAt: true,
+  credential: { select: { emailVerified: true } },
 } satisfies Prisma.UserSelect;
 
 export type SafeUser = Prisma.UserGetPayload<{

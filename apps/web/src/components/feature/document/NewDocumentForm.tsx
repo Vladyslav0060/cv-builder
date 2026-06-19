@@ -146,37 +146,38 @@ function DocumentWizardContent({
         </CardHeader>
       </Card>
 
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={onSubmit} className="space-y-4 pb-4">
         <WizardStepPanel
           step={activeStep}
           control={form.control}
           disabled={isBusy}
+          footer={
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={goBack}
+                disabled={stepIndex === 0 || isBusy}
+              >
+                Back
+              </Button>
+
+              {isFinalFormStep ? (
+                <Button type="submit" disabled={isBusy}>
+                  {activeStep.kind === "form" && activeStep.submitLabel
+                    ? activeStep.submitLabel
+                    : "Continue"}
+                </Button>
+              ) : (
+                <Button type="button" onClick={goNext} disabled={isBusy}>
+                  {activeStep.kind === "message"
+                    ? activeStep.continueLabel
+                    : (activeStep.submitLabel ?? "Continue")}
+                </Button>
+              )}
+            </>
+          }
         />
-
-        <div className="flex items-center justify-between gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={goBack}
-            disabled={stepIndex === 0 || isBusy}
-          >
-            Back
-          </Button>
-
-          {isFinalFormStep ? (
-            <Button type="submit" disabled={isBusy}>
-              {activeStep.kind === "form" && activeStep.submitLabel
-                ? activeStep.submitLabel
-                : "Continue"}
-            </Button>
-          ) : (
-            <Button type="button" onClick={goNext} disabled={isBusy}>
-              {activeStep.kind === "message"
-                ? activeStep.continueLabel
-                : (activeStep.submitLabel ?? "Continue")}
-            </Button>
-          )}
-        </div>
       </form>
 
       {isCreating ? <DocumentAiLoader mode={creationMode} /> : null}

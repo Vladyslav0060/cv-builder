@@ -1,11 +1,11 @@
 "use client";
 import { Container } from "@/components/ui/container";
-import RegisterForm from "./RegisterForm";
+import ForgotPasswordForm from "./ForgotPasswordForm";
 
-export default function RegisterPage() {
+export default function ForgotPasswordPage() {
   return (
     <Container className="flex flex-col justify-center max-w-sm">
-      <RegisterForm />
+      <ForgotPasswordForm />
     </Container>
   );
 }

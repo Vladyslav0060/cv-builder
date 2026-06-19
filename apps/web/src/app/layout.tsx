@@ -40,7 +40,9 @@ export default async function RootLayout({
           <main className="flex h-dvh flex-col overflow-hidden">
             <TopNav />
             <AppBreadcrumbs />
-            <div className="min-h-0 flex-1 overflow-auto pb-14">{children}</div>
+            <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+              <div className="min-h-0 flex-1">{children}</div>
+            </div>
           </main>
         </Providers>
       </body>

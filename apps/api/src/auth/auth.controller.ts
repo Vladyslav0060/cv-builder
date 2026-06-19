@@ -24,6 +24,9 @@ import { RolesGuard } from './guards/roles.guard';
 import { MeDto } from './dto/me.dto';
 import { toMeDto } from './mappers/me.mapper';
 import { GoogleAuthGuard } from './guards/google-auth.guard';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -69,6 +72,35 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   signUp(@Body() createUserDto: CreateUserDto): any {
     return this.authService.register(createUserDto);
+  }
+
+  @Post('verify-email')
+  @ApiOperation({ summary: 'Verify email address with token from email link' })
+  @HttpCode(HttpStatus.OK)
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(dto.token);
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Request a password reset email' })
+  @HttpCode(HttpStatus.OK)
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Reset password using token from email' })
+  @HttpCode(HttpStatus.OK)
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.newPassword);
+  }
+
+  @Post('resend-verification')
+  @ApiOperation({ summary: 'Resend email verification link' })
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(AuthenticatedGuard)
+  resendVerification(@Req() req: any) {
+    return this.authService.resendVerification(req.user.id);
   }
 
   @Get('google')
