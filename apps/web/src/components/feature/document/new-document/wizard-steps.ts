@@ -50,7 +50,6 @@ export const personalInfoFields: WizardFieldConfig[] = [
   { name: "lastName", label: "Last name", placeholder: "Doe" },
   { name: "email", label: "Email", placeholder: "you@example.com" },
   { name: "phone", label: "Phone", placeholder: "+1 555 000 0000" },
-  { name: "avatarUrl", label: "Avatar URL", placeholder: "https://..." },
   {
     name: "linkedIn",
     label: "LinkedIn",

@@ -17,6 +17,9 @@ import {
 } from "@/components/ui/select";
 import { UpdateUserDtoRole } from "@/api/generated.schemas";
 import { Textarea } from "@/components/ui/textarea";
+import { AvatarUploadInput } from "./AvatarUploadInput";
+import { useCurrentUser } from "@/hooks/auth/current-user";
+import { resolveAvatarUrl } from "@/lib/avatar-url";
 
 const CONTACT_FIELDS = [
   {
@@ -43,8 +46,20 @@ export interface TabGroupProps {
 
 export const PersonalInfoInputs = ({ isPending }: TabGroupProps) => {
   const form = useFormContext();
+  const currentUser = useCurrentUser();
+
+  const initials =
+    currentUser?.firstName
+      ? currentUser.firstName[0].toUpperCase()
+      : currentUser?.email?.[0]?.toUpperCase() ?? "U";
+
   return (
     <>
+      <AvatarUploadInput
+        currentAvatarUrl={resolveAvatarUrl(currentUser?.avatarUrl)}
+        initials={initials}
+      />
+
       <Controller
         control={form.control}
         name="email"
@@ -88,25 +103,6 @@ export const PersonalInfoInputs = ({ isPending }: TabGroupProps) => {
           />
         ))}
       </div>
-
-      <Controller
-        control={form.control}
-        name="avatarUrl"
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel>Avatar URL</FieldLabel>
-            <FieldContent>
-              <Input
-                placeholder="https://..."
-                disabled={isPending}
-                {...field}
-              />
-              <FieldDescription>Optional. Public image URL.</FieldDescription>
-              <FieldError errors={fieldState.error ? [fieldState.error] : []} />
-            </FieldContent>
-          </Field>
-        )}
-      />
 
       <Controller
         control={form.control}

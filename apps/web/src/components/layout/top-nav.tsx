@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ModeToggle } from "../ui/mode-toggle";
 import {
   DropdownMenu,
@@ -19,6 +19,7 @@ import { Container } from "../ui/container";
 import { motion } from "framer-motion";
 import { useCurrentUser } from "@/hooks/auth/current-user";
 import { cn } from "@/lib/utils";
+import { resolveAvatarUrl } from "@/lib/avatar-url";
 import { useState } from "react";
 
 export function TopNav() {
@@ -48,20 +49,22 @@ export function TopNav() {
 
           <ModeToggle />
           <DropdownMenu onOpenChange={(value) => setMenuOpen(value)}>
-            <DropdownMenuTrigger>
-              <Avatar className="h-8 w-8 cursor-pointer relative">
-                <AvatarFallback>
-                  {currentUser?.firstName
-                    ? currentUser.firstName[0].toUpperCase()
-                    : "U"}
-                </AvatarFallback>
-                <div
-                  className={cn(
-                    "top-0 right-0 h-2 w-2 rounded-full bg-amber-300",
-                    profileNotFilled && !menuOpen ? "absolute" : "hidden",
+            <DropdownMenuTrigger asChild>
+              <button className="relative cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <Avatar size="default">
+                  {resolveAvatarUrl(currentUser?.avatarUrl) && (
+                    <AvatarImage src={resolveAvatarUrl(currentUser?.avatarUrl)!} alt="Avatar" />
                   )}
-                />
-              </Avatar>
+                  <AvatarFallback>
+                    {currentUser?.firstName
+                      ? currentUser.firstName[0].toUpperCase()
+                      : "U"}
+                  </AvatarFallback>
+                </Avatar>
+                {profileNotFilled && !menuOpen && (
+                  <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-amber-300 ring-2 ring-background" />
+                )}
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-40" align="end">
               <DropdownMenuGroup>

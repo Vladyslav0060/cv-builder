@@ -68,6 +68,40 @@ export class UserService {
     });
   }
 
+  async updateAvatar(
+    userId: string,
+    buffer: Buffer,
+    mimeType: string,
+    avatarUrl: string,
+  ): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        avatarData: buffer as unknown as Uint8Array<ArrayBuffer>,
+        avatarMimeType: mimeType,
+        avatarUrl,
+      },
+    });
+  }
+
+  async getAvatarData(
+    userId: string,
+  ): Promise<{ data: Buffer; mimeType: string } | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatarData: true, avatarMimeType: true },
+    });
+    if (!user?.avatarData || !user?.avatarMimeType) return null;
+    return { data: Buffer.from(user.avatarData), mimeType: user.avatarMimeType };
+  }
+
+  async deleteAvatar(userId: string): Promise<User> {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarData: null, avatarMimeType: null, avatarUrl: null },
+    });
+  }
+
   async deleteUser(id: string): Promise<User> {
     return this.prisma.user.delete({
       where: {

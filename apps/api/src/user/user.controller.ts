@@ -1,19 +1,26 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
   InternalServerErrorException,
+  NotFoundException,
   Param,
   Patch,
+  Post,
   Req,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UserService } from './user.service';
 import {
   ApiBody,
+  ApiConsumes,
   ApiOkResponse,
   ApiOperation,
   ApiParam,
@@ -48,6 +55,60 @@ export class UserController {
   })
   async updateUser(@Req() req: any, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.updateUser(req.user.id, updateUserDto);
+  }
+
+  @Post('avatar')
+  @ApiOperation({ summary: 'Upload avatar image (stored in DB)' })
+  @UseGuards(AuthenticatedGuard)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+          return cb(new BadRequestException('Only image files are allowed'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadAvatar(
+    @Req() req: any,
+    @UploadedFile() file: { buffer: Buffer; mimetype: string; originalname: string; size: number },
+  ) {
+    if (!file) throw new BadRequestException('No file provided');
+    const userId: string = req.user.id;
+    const avatarUrl = `/user/avatar/${userId}?v=${Date.now()}`;
+    await this.userService.updateAvatar(userId, file.buffer, file.mimetype, avatarUrl);
+    return { avatarUrl };
+  }
+
+  @Delete('avatar')
+  @ApiOperation({ summary: 'Remove avatar' })
+  @UseGuards(AuthenticatedGuard)
+  async removeAvatar(@Req() req: any) {
+    await this.userService.deleteAvatar(req.user.id);
+    return { ok: true };
+  }
+
+  @Get('avatar/:userId')
+  @ApiOperation({ summary: 'Serve avatar image' })
+  @ApiParam({ name: 'userId', required: true })
+  async getAvatar(
+    @Param('userId') userId: string,
+    @Res() res: Response,
+  ) {
+    const avatar = await this.userService.getAvatarData(userId);
+    if (!avatar) throw new NotFoundException('No avatar found');
+    (res as any).set('Content-Type', avatar.mimeType);
+    (res as any).set('Cache-Control', 'private, max-age=31536000, immutable');
+    (res as any).end(avatar.data);
   }
 
   @Delete('me')
