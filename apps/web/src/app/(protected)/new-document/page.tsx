@@ -3,7 +3,7 @@ import { NewDocumentForm } from "../../../components/feature/document/NewDocumen
 
 export default function Page() {
   return (
-    <Container variant="fullMobileConstrainedBreakpointPadded" paddingY="sm">
+    <Container variant="constrainedBreakpointPadded" paddingY="sm">
       <div className="flex size-full justify-center">
         <NewDocumentForm />
       </div>

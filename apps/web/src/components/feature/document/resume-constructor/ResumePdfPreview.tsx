@@ -15,6 +15,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DialogOverlay, DialogPortal } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 import type {
@@ -64,6 +69,26 @@ function useElementSize<T extends HTMLElement>() {
   }, []);
 
   return { ref, size };
+}
+
+function useHasFinePointer() {
+  const [hasFinePointer, setHasFinePointer] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const updatePointerMode = () => setHasFinePointer(mediaQuery.matches);
+
+    updatePointerMode();
+    mediaQuery.addEventListener("change", updatePointerMode);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updatePointerMode);
+    };
+  }, []);
+
+  return hasFinePointer;
 }
 
 type Theme = (typeof resumeColorSchemes)[number];
@@ -1486,13 +1511,16 @@ export function PreviewSurface({
   resume,
   template,
   colorScheme,
+  onEmptyPointerDown,
 }: {
   resume: ResumeData;
   template: ResumeTemplateId;
   colorScheme: ResumeColorSchemeId;
+  onEmptyPointerDown?: () => void;
 }) {
   const theme = getTheme(colorScheme);
   const { ref, size } = useElementSize<HTMLDivElement>();
+  const hasFinePointer = useHasFinePointer();
   const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
 
   const scale = useMemo(() => {
@@ -1516,6 +1544,19 @@ export function PreviewSurface({
     );
   }, [size.height, size.width]);
 
+  const isInsidePage = (x: number, y: number) => {
+    const pageWidth = RESUME_A4_WIDTH_PX * scale;
+    const pageHeight = RESUME_A4_HEIGHT_PX * scale;
+    const pageLeft = (size.width - pageWidth) / 2;
+    const pageTop = (size.height - pageHeight) / 2;
+    const localX = x - pageLeft;
+    const localY = y - pageTop;
+
+    return (
+      localX >= 0 && localY >= 0 && localX <= pageWidth && localY <= pageHeight
+    );
+  };
+
   const magnifiedScale = scale * PREVIEW_MAGNIFIER_SCALE;
   let magnifier: ReactNode = null;
 
@@ -1523,6 +1564,8 @@ export function PreviewSurface({
     event: ReactPointerEvent<HTMLDivElement>,
     options?: { reset?: boolean },
   ) => {
+    if (!hasFinePointer) return;
+
     if (options?.reset) {
       setPointer(null);
       return;
@@ -1535,17 +1578,15 @@ export function PreviewSurface({
     });
   };
 
-  if (pointer) {
+  if (hasFinePointer && pointer) {
     const pageWidth = RESUME_A4_WIDTH_PX * scale;
     const pageHeight = RESUME_A4_HEIGHT_PX * scale;
     const pageLeft = (size.width - pageWidth) / 2;
     const pageTop = (size.height - pageHeight) / 2;
     const localX = pointer.x - pageLeft;
     const localY = pointer.y - pageTop;
-    const isInsidePage =
-      localX >= 0 && localY >= 0 && localX <= pageWidth && localY <= pageHeight;
 
-    if (isInsidePage) {
+    if (isInsidePage(pointer.x, pointer.y)) {
       magnifier = (
         <div
           aria-hidden="true"
@@ -1597,6 +1638,17 @@ export function PreviewSurface({
       className="relative flex h-full min-h-0 w-full flex-1 overflow-hidden"
       onPointerEnter={updatePointer}
       onPointerMove={updatePointer}
+      onPointerDown={(event) => {
+        if (!onEmptyPointerDown) return;
+
+        const rect = event.currentTarget.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
+        if (!isInsidePage(x, y)) {
+          onEmptyPointerDown();
+        }
+      }}
       onPointerLeave={(event) => updatePointer(event, { reset: true })}
     >
       <div className="flex h-full w-full items-center justify-center overflow-hidden">
@@ -1636,6 +1688,7 @@ export function ResumePdfPreview({
   colorScheme,
   isExporting,
   onExport,
+  showFixedMobileActions,
 }: {
   className?: string;
   resume: ResumeData;
@@ -1643,11 +1696,54 @@ export function ResumePdfPreview({
   colorScheme: ResumeColorSchemeId;
   isExporting?: boolean;
   onExport?: () => void;
+  showFixedMobileActions?: boolean;
 }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   return (
     <>
+      {showFixedMobileActions ? (
+        <div className="fixed right-4 top-[calc(4rem+env(safe-area-inset-bottom))] z-40 flex items-center gap-2 xl:hidden">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                size="icon-lg"
+                variant="outline"
+                aria-label="Open full screen preview"
+                className="border-border/70 bg-background/95 shadow-lg backdrop-blur"
+                onClick={() => setIsFullscreen(true)}
+              >
+                <Maximize2 className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top">Full screen preview</TooltipContent>
+          </Tooltip>
+          {onExport ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon-lg"
+                  variant="outline"
+                  aria-label="Export PDF"
+                  className="border-border/70 bg-background/95 shadow-lg backdrop-blur"
+                  onClick={onExport}
+                  disabled={isExporting}
+                >
+                  {isExporting ? (
+                    <LoaderCircle className="size-4 animate-spin" />
+                  ) : (
+                    <Download className="size-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Export PDF</TooltipContent>
+            </Tooltip>
+          ) : null}
+        </div>
+      ) : null}
+
       <Card
         className={cn(
           "flex h-full min-h-0 flex-col border-border/60 bg-card/75 shadow-sm backdrop-blur dark:from-slate-800/60 dark:to-slate-900/60",
@@ -1713,6 +1809,7 @@ export function ResumePdfPreview({
               resume={resume}
               template={template}
               colorScheme={colorScheme}
+              onEmptyPointerDown={() => setIsFullscreen(false)}
             />
           </DialogPrimitive.Content>
         </DialogPortal>

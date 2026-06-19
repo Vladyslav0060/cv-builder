@@ -5,7 +5,7 @@ import { ProfileForm } from "../../../components/feature/profile/ProfileForm";
 
 export default function Profile() {
   return (
-    <Container variant={"fullMobileConstrainedPadded"} paddingY={"sm"}>
+    <Container variant={"constrainedPadded"} paddingY={"sm"}>
       <PageBreadcrumbs
         items={[
           { href: ROUTES.HOME, title: "Home" },
