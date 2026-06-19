@@ -215,6 +215,45 @@ export class AuthService {
     return { ok: true };
   }
 
+  createTransferToken(userId: string): string {
+    const exp = Date.now() + 30_000;
+    const payload = Buffer.from(JSON.stringify({ userId, exp })).toString('base64url');
+    const sig = crypto
+      .createHmac('sha256', process.env.APP_SECRET!)
+      .update(payload)
+      .digest('base64url');
+    return `${payload}.${sig}`;
+  }
+
+  verifyTransferToken(token: string): string | null {
+    const dotIdx = token.lastIndexOf('.');
+    if (dotIdx < 0) return null;
+    const payload = token.slice(0, dotIdx);
+    const sig = token.slice(dotIdx + 1);
+    const expected = crypto
+      .createHmac('sha256', process.env.APP_SECRET!)
+      .update(payload)
+      .digest('base64url');
+    if (sig !== expected) return null;
+    try {
+      const parsed = JSON.parse(Buffer.from(payload, 'base64url').toString()) as {
+        userId: string;
+        exp: number;
+      };
+      if (Date.now() > parsed.exp) return null;
+      return parsed.userId;
+    } catch {
+      return null;
+    }
+  }
+
+  async getUserForSession(userId: string): Promise<SafeUser | null> {
+    return this.prisma.user.findUnique({
+      where: { id: userId },
+      select: safeUserSelect,
+    });
+  }
+
   async loginWithGoogle(profile: {
     id: string;
     emails?: Array<{ value: string }>;
