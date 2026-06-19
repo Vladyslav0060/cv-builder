@@ -16,20 +16,15 @@ import { useRouter } from "next/navigation";
 import { ROUTES } from "@/common/routes";
 import Link from "next/link";
 import { Container } from "../ui/container";
-import { motion } from "framer-motion";
 import { useCurrentUser } from "@/hooks/auth/current-user";
-import { cn } from "@/lib/utils";
 import { resolveAvatarUrl } from "@/lib/avatar-url";
 import { useState } from "react";
 
 export function TopNav() {
   const router = useRouter();
   const { mutate: handleSignOut } = useSignOut();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [_, setMenuOpen] = useState(false);
   const currentUser = useCurrentUser();
-  const profileNotFilled =
-    currentUser?.profileFilledPercentage &&
-    currentUser?.profileFilledPercentage < 40;
 
   return (
     <header className="relative w-full top-0 z-50 border-b border-border">
@@ -53,7 +48,10 @@ export function TopNav() {
               <button className="relative cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                 <Avatar size="default">
                   {resolveAvatarUrl(currentUser?.avatarUrl) && (
-                    <AvatarImage src={resolveAvatarUrl(currentUser?.avatarUrl)!} alt="Avatar" />
+                    <AvatarImage
+                      src={resolveAvatarUrl(currentUser?.avatarUrl)!}
+                      alt="Avatar"
+                    />
                   )}
                   <AvatarFallback>
                     {currentUser?.firstName
@@ -61,9 +59,6 @@ export function TopNav() {
                       : "U"}
                   </AvatarFallback>
                 </Avatar>
-                {profileNotFilled && !menuOpen && (
-                  <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-amber-300 ring-2 ring-background" />
-                )}
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-40" align="end">
@@ -75,21 +70,7 @@ export function TopNav() {
                       onClick={() => router.push(ROUTES.PROFILE)}
                       className="relative"
                     >
-                      <div className="flex items-center gap-2">
-                        <p>Profile</p>
-                        <motion.div
-                          className={cn(
-                            "h-2 w-2 rounded-full bg-amber-300",
-                            profileNotFilled && menuOpen ? "flex" : "hidden",
-                          )}
-                          animate={{ opacity: [1, 0.25, 1] }}
-                          transition={{
-                            duration: 1.1,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                          }}
-                        />
-                      </div>
+                      Profile
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => router.push(ROUTES.DOCUMENTS)}
