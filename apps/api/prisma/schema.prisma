@@ -47,6 +47,8 @@ model User {
   aiRequestUsages AiRequestUsage[]
   oauth           OAuthAccount[]
   sessions        Session[]
+  stripeCustomerId  String?
+  subscription  Subscription?
 }
 
 model Credential {
@@ -148,4 +150,31 @@ model AiRequestUsage {
   @@unique([userId, day], map: "ai_request_usages_user_id_day_key")
   @@index([day], map: "ai_request_usages_day_idx")
   @@map("ai_request_usages")
+}
+
+enum Tier {
+  pro
+  max
+}
+
+enum SubscriptionStatus {
+  active
+  trialing
+  past_due
+  canceled
+  incomplete
+  incomplete_expired
+  unpaid
+  paused
+}
+model Subscription {
+  id      String   @id @default(cuid())
+  userId  String  @unique
+  priceId String
+  tier    Tier
+
+  status            SubscriptionStatus
+  currentPeriodEnd  DateTime
+  
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade) 
 }
