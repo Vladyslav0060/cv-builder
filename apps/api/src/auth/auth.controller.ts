@@ -118,19 +118,40 @@ export class AuthController {
   @ApiOperation({ summary: 'Google OAuth callback' })
   @UseGuards(GoogleAuthGuard)
   googleAuthCallback(
-    @Req() req: Request & { user?: any },
+    @Req() req: Request & { user?: any; session?: any },
     @Res({ passthrough: true }) res: Response,
   ): MeDto | void {
     if (!req.user) throw new UnauthorizedException();
 
     const redirectUrl = process.env.AUTH_SUCCESS_REDIRECT_URL;
     if (redirectUrl) {
+      const transferToken = this.authService.createTransferToken(req.user.id);
+      // Destroy session now; a new one is created via POST /auth/transfer-session
+      // through the frontend proxy so the cookie lands on the frontend domain.
+      req.session?.destroy(() => {});
       const url = new URL(redirectUrl);
-      url.searchParams.set('auth', 'google');
+      url.searchParams.set('transfer_token', transferToken);
       res.redirect(url.toString());
       return;
     }
     return toMeDto(req.user);
+  }
+
+  @Post('transfer-session')
+  @ApiOperation({ summary: 'Exchange a Google OAuth transfer token for a session' })
+  @HttpCode(HttpStatus.OK)
+  async transferSession(
+    @Req() req: any,
+    @Body('token') token: string,
+  ): Promise<MeDto> {
+    const userId = this.authService.verifyTransferToken(token);
+    if (!userId) throw new UnauthorizedException('Invalid or expired token');
+    const user = await this.authService.getUserForSession(userId);
+    if (!user) throw new UnauthorizedException('User not found');
+    await new Promise<void>((resolve, reject) =>
+      req.logIn(user, (err: any) => (err ? reject(err) : resolve())),
+    );
+    return toMeDto(user);
   }
 
   @Post('logout')

@@ -39,12 +39,11 @@ export default function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const { mutate: handleLogin } = useLogin();
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5050";
   const googleAuthPath = getAuthControllerGoogleAuthUrl().replace(
     /^https?:\/\/[^/]+/,
     "",
   );
-  const googleAuthUrl = `${apiBaseUrl}${googleAuthPath}`;
+  const googleAuthUrl = `/api-backend${googleAuthPath}`;
 
   const methods = useForm<LoginDto>({
     resolver: zodResolver(AuthControllerLoginBody),
