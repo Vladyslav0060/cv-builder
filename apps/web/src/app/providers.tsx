@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { ThemeProvider } from "@/components/theme-provider";
@@ -9,9 +9,8 @@ import { CurrentUserProvider, useSetCurrentUser } from "@/hooks/auth/current-use
 import { useEnrichedUser } from "@/hooks/user/useEnrichedUser";
 import { useMe } from "@/hooks/auth/useMe";
 import { BreadcrumbsProvider } from "@/lib/contexts/BreadCrumbContext";
-import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { toast } from "sonner";
-import axios from "axios";
 
 function CurrentUserHydrator() {
   const { data: me } = useMe();
@@ -37,34 +36,18 @@ function CurrentUserHydrator() {
   return null;
 }
 
-function GoogleLoginHandler() {
+function GoogleLoginToast() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const queryClient = useQueryClient();
-  const transferToken = searchParams.get("transfer_token");
-  const didRun = useRef(false);
+  const auth = searchParams.get("auth");
 
   useEffect(() => {
-    if (!transferToken || didRun.current) return;
-    didRun.current = true;
+    if (auth !== "google") return;
 
-    axios
-      .post(
-        "/api-backend/auth/transfer-session",
-        { token: transferToken },
-        { withCredentials: true },
-      )
-      .then(() => {
-        queryClient.invalidateQueries();
-        toast.success("Logged in successfully");
-        router.replace(pathname);
-      })
-      .catch(() => {
-        toast.error("Login failed. Please try again.");
-        router.replace(pathname);
-      });
-  }, [transferToken, pathname, queryClient, router]);
+    toast.success("Logged in successfully");
+    router.replace(pathname);
+  }, [auth, pathname, router]);
 
   return null;
 }
@@ -83,7 +66,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           <CurrentUserProvider value={undefined}>
             <CurrentUserHydrator />
             <Suspense fallback={null}>
-              <GoogleLoginHandler />
+              <GoogleLoginToast />
             </Suspense>
             <BreadcrumbsProvider>{children}</BreadcrumbsProvider>
           </CurrentUserProvider>

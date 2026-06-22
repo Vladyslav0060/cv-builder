@@ -53,7 +53,7 @@ async function bootstrap() {
     cookie: {
       httpOnly: true,
       sameSite: isCrossSiteDeployment ? 'none' : 'lax',
-      secure: isCrossSiteDeployment ? true : false,
+      secure: isCrossSiteDeployment ? 'auto' : false,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     },
   };

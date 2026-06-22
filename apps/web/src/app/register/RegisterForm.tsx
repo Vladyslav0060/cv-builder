@@ -38,11 +38,12 @@ export default function RegisterForm({
   ...props
 }: React.ComponentProps<"div">) {
   const { mutate: handleRegister } = useRegister();
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5050";
   const googleAuthPath = getAuthControllerGoogleAuthUrl().replace(
     /^https?:\/\/[^/]+/,
     "",
   );
-  const googleAuthUrl = `/api-backend${googleAuthPath}`;
+  const googleAuthUrl = `${apiBaseUrl}${googleAuthPath}`;
 
   const methods = useForm<RegisterDto>({
     resolver: zodResolver(AuthControllerSignUpBody),
