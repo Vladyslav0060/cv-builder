@@ -1,7 +1,16 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Headers,
+  Post,
+  RawBodyRequest,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
+import { Request } from 'express';
 import { SubscriptionService } from './subscription.service';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import Stripe from 'stripe';
+import Stripe, { Event } from 'stripe';
 import { AuthenticatedGuard } from 'src/auth/guards/authenticated.guard';
 import { SafeUser } from 'src/user/user.select';
 
@@ -19,5 +28,15 @@ export class SubscriptionController {
       currentUser.id,
       body.priceId,
     );
+  }
+
+  @Post('webhook')
+  async webhookHandler(
+    @Req() req: RawBodyRequest<Request>,
+    @Headers('stripe-signature') signature: string,
+  ): Promise<Event> {
+    const rawBody = req.rawBody;
+    if (!rawBody) throw new Error();
+    return this.subscriptionService.constructEvent(rawBody, signature);
   }
 }

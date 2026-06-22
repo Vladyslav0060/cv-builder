@@ -10,7 +10,7 @@ import { PostgresSessionStore } from './auth/postgres-session.store';
 const PORT = process.env.PORT ?? 5050;
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
   const authRedirectUrl = process.env.AUTH_SUCCESS_REDIRECT_URL;
   const frontendOrigin = authRedirectUrl

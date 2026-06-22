@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import Stripe from 'stripe';
+import Stripe, { Event } from 'stripe';
 
 @Injectable()
 export class SubscriptionService {
@@ -28,5 +28,16 @@ export class SubscriptionService {
       mode: 'subscription',
     });
     return session;
+  }
+
+  async constructEvent(
+    rawBody: string | Buffer,
+    signature: string,
+  ): Promise<Event> {
+    return this.stripe.webhooks.constructEvent(
+      rawBody,
+      signature,
+      process.env.STRIPE_WEBHOOK_SECRET as string,
+    );
   }
 }
