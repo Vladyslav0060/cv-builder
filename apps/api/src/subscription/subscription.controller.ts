@@ -36,15 +36,13 @@ export class SubscriptionController {
     @Req() req: RawBodyRequest<Request>,
     @Headers('stripe-signature') signature: string,
   ) {
+    let event: Stripe.Event;
     try {
-      if (!req.rawBody) throw new BadRequestException('RawBody is missing');
-      const event = this.subscriptionService.constructEvent(
-        req.rawBody,
-        signature,
-      );
-      await this.subscriptionService.handleWebhookEvent(event);
+      if (!req.rawBody) throw new BadRequestException('rawBody is missing');
+      event = this.subscriptionService.constructEvent(req.rawBody, signature);
     } catch (error) {
       throw new BadRequestException('Webhook signature verification failed');
     }
+    await this.subscriptionService.handleWebhookEvent(event);
   }
 }

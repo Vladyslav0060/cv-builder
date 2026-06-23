@@ -64,6 +64,7 @@ export class SubscriptionService implements OnModuleInit {
           customer: stripeCustomerId,
           subscription,
         } = event.data.object;
+         if (!client_reference_id) return;
 
         const stripeSubscription = await this.stripe.subscriptions.retrieve(
           subscription as string,
