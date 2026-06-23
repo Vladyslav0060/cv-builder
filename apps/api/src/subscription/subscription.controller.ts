@@ -1,4 +1,6 @@
+import Stripe from 'stripe';
 import {
+  BadRequestException,
   Body,
   Controller,
   Headers,
@@ -10,7 +12,6 @@ import {
 import { Request } from 'express';
 import { SubscriptionService } from './subscription.service';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import Stripe, { Event } from 'stripe';
 import { AuthenticatedGuard } from 'src/auth/guards/authenticated.guard';
 import { SafeUser } from 'src/user/user.select';
 
@@ -34,9 +35,16 @@ export class SubscriptionController {
   async webhookHandler(
     @Req() req: RawBodyRequest<Request>,
     @Headers('stripe-signature') signature: string,
-  ): Promise<Event> {
-    const rawBody = req.rawBody;
-    if (!rawBody) throw new Error();
-    return this.subscriptionService.constructEvent(rawBody, signature);
+  ) {
+    try {
+      if (!req.rawBody) throw new BadRequestException('RawBody is missing');
+      const event = this.subscriptionService.constructEvent(
+        req.rawBody,
+        signature,
+      );
+      await this.subscriptionService.handleWebhookEvent(event);
+    } catch (error) {
+      throw new BadRequestException('Webhook signature verification failed');
+    }
   }
 }

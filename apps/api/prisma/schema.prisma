@@ -175,6 +175,7 @@ model Subscription {
 
   status            SubscriptionStatus
   currentPeriodEnd  DateTime
+  stripeSubscriptionId String @unique
   
   user    User  @relation(fields: [userId], references: [id], onDelete: Cascade) 
 }
