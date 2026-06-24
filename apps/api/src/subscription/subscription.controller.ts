@@ -14,10 +14,21 @@ import { SubscriptionService } from './subscription.service';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { AuthenticatedGuard } from 'src/auth/guards/authenticated.guard';
 import { SafeUser } from 'src/user/user.select';
+import { TierGuard } from 'src/auth/guards/tier.guard';
+import { RequireTier } from 'src/auth/decorators/require-tier.decorator';
+import { Tier } from 'generated/prisma/enums';
 
 @Controller('subscription')
 export class SubscriptionController {
   constructor(private subscriptionService: SubscriptionService) {}
+
+  @Post('test')
+  @UseGuards(TierGuard)
+  @RequireTier([Tier.pro])
+  test() {
+    console.log('test');
+    return 'test succeed';
+  }
 
   @Post('checkout-session')
   @UseGuards(AuthenticatedGuard)
