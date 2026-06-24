@@ -5,9 +5,9 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { SubscriptionStatus } from 'generated/prisma/enums';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RequireTier } from '../decorators/require-tier.decorator';
+import { ACTIVE_STATUSES, TIER_RANK } from 'src/subscription/utils';
 
 @Injectable()
 export class TierGuard implements CanActivate {
@@ -19,9 +19,9 @@ export class TierGuard implements CanActivate {
   async canActivate(ctx: ExecutionContext) {
     const req = ctx.switchToHttp().getRequest();
 
-    const roles = this.reflector.get(RequireTier, ctx.getHandler());
+    const requiredTier = this.reflector.get(RequireTier, ctx.getHandler());
 
-    if (!roles) return true;
+    if (!requiredTier) return true;
 
     const user = await this.prisma.user.findUnique({
       where: { id: req.user.id },
@@ -29,16 +29,13 @@ export class TierGuard implements CanActivate {
     });
 
     if (!user) throw new UnauthorizedException('User not found');
-
+    if (!user?.subscription?.tier || !user.subscription?.status) return false;
     const userTier = user?.subscription?.tier;
     const userStatus = user.subscription?.status;
 
-    const acceptableStatuses: SubscriptionStatus[] = ['active', 'trialing'];
-
-    const response = userTier
-      ? roles.includes(userTier) &&
-        acceptableStatuses.includes(userStatus as SubscriptionStatus)
-      : false;
+    const response =
+      TIER_RANK[userTier] >= TIER_RANK[requiredTier] &&
+      ACTIVE_STATUSES.includes(userStatus);
 
     return response;
   }

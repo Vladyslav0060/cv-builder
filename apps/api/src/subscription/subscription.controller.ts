@@ -24,7 +24,7 @@ export class SubscriptionController {
 
   @Post('test')
   @UseGuards(TierGuard)
-  @RequireTier([Tier.pro])
+  @RequireTier(Tier.pro)
   test() {
     console.log('test');
     return 'test succeed';
