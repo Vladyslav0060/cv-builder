@@ -39,7 +39,11 @@ export class AuthService {
       data: {
         ...userFields,
         credential: {
-          create: { passwordHash, verifyCode: code, verifyCodeExpiresAt: expiresAt },
+          create: {
+            passwordHash,
+            verifyCode: code,
+            verifyCodeExpiresAt: expiresAt,
+          },
         },
       },
     });
@@ -217,7 +221,9 @@ export class AuthService {
 
   createTransferToken(userId: string): string {
     const exp = Date.now() + 30_000;
-    const payload = Buffer.from(JSON.stringify({ userId, exp })).toString('base64url');
+    const payload = Buffer.from(JSON.stringify({ userId, exp })).toString(
+      'base64url',
+    );
     const sig = crypto
       .createHmac('sha256', process.env.APP_SECRET!)
       .update(payload)

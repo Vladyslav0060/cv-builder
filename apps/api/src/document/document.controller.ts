@@ -28,6 +28,7 @@ import { type ResumeExportPayload } from '../shared/resume-constructor-data';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { AuthenticatedGuard } from 'src/auth/guards/authenticated.guard';
 import { SafeUser } from 'src/user/user.select';
+import { UsageQuotaService } from 'src/usage/usage-quota.service';
 
 function getDocumentTypeLabel(type: DocumentType) {
   return type === 'RESUME' ? 'resume' : 'cover letter';
@@ -39,6 +40,7 @@ export class DocumentController {
     private documentService: DocumentService,
     private userService: UserService,
     private aiService: AiService,
+    private usageQuotaService: UsageQuotaService,
   ) {}
 
   @Post('resume/pdf')
@@ -47,7 +49,13 @@ export class DocumentController {
       type: 'object',
     },
   })
-  async exportResumePdf(@Body() payload: ResumeExportPayload) {
+  @UseGuards(AuthenticatedGuard)
+  async exportResumePdf(
+    @CurrentUser() currentUser: SafeUser,
+    @Body() payload: ResumeExportPayload,
+  ) {
+    await this.usageQuotaService.consumeQuota(currentUser.id, 'EXPORT');
+
     const pdfBuffer = await createResumeConstructorPdfBuffer(
       payload.resume,
       payload.template,
@@ -153,6 +161,8 @@ export class DocumentController {
       type,
     } = body;
     const userId = currentUser.id;
+    await this.usageQuotaService.consumeQuota(userId, 'CREATE');
+
     const maxOutputTokens = process.env.MAX_OUTPUT_TOKENS
       ? Number(process.env.MAX_OUTPUT_TOKENS)
       : 600;
@@ -186,7 +196,7 @@ Description: ${description}`,
       ]
         .filter(Boolean)
         .join('\n\n');
-      const response = await this.aiService.ask(userId, userPrompt, {
+      const response = await this.aiService.ask(userPrompt, {
         system: systemPrompt,
         maxOutputTokens,
       });
@@ -197,7 +207,7 @@ Description: ${description}`,
       this.documentService.createDocument(userId, body, documentContent),
       type === 'RESUME' && applicantSource && applicantInfo
         ? this.aiService
-            .generateResume(userId, applicantInfo, {
+            .generateResume(applicantInfo, {
               title: jobTitle,
               company,
               description,

@@ -22,6 +22,7 @@ import { Tier } from 'generated/prisma/enums';
 import { PlanDto } from './dto/get-plans.dto';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
 import { CheckoutSessionDto } from './dto/checkout-session.dto';
+import { CurrentSubscriptionDto } from './dto/current-subscription.dto';
 
 @Controller('subscription')
 export class SubscriptionController {
@@ -54,6 +55,21 @@ export class SubscriptionController {
       body.priceId,
     );
     return { url: session.url };
+  }
+
+  @Get('current')
+  @UseGuards(AuthenticatedGuard)
+  @ApiOkResponse({ type: CurrentSubscriptionDto })
+  getCurrentSubscription(
+    @CurrentUser() currentUser: SafeUser,
+  ): Promise<CurrentSubscriptionDto> {
+    return this.subscriptionService.getCurrentSubscription(currentUser.id);
+  }
+
+  @Post('cancel')
+  @UseGuards(AuthenticatedGuard)
+  async cancelSubscription(@CurrentUser() currentUser: SafeUser) {
+    await this.subscriptionService.cancelSubscription(currentUser.id);
   }
 
   @Post('webhook')

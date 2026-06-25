@@ -4,9 +4,10 @@ import { DocumentController } from './document.controller';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { UserModule } from 'src/user/user.module';
 import { AiModule } from 'src/ai/ai.module';
+import { UsageModule } from 'src/usage/usage.module';
 
 @Module({
-  imports: [PrismaModule, UserModule, AiModule],
+  imports: [PrismaModule, UserModule, AiModule, UsageModule],
   providers: [DocumentService],
   controllers: [DocumentController],
   exports: [DocumentService],

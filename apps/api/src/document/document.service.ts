@@ -89,7 +89,8 @@ export class DocumentService {
       experience: resume.experience as unknown as Prisma.InputJsonValue,
       education: resume.education as unknown as Prisma.InputJsonValue,
       projects: (resume.projects ?? []) as unknown as Prisma.InputJsonValue,
-      certifications: (resume.certifications ?? []) as unknown as Prisma.InputJsonValue,
+      certifications: (resume.certifications ??
+        []) as unknown as Prisma.InputJsonValue,
       template,
       colorScheme,
     };

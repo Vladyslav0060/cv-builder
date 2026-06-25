@@ -12,4 +12,5 @@ export const ROUTES = {
   RESUME: "/documents/resume",
   COVER_LETTER: "/documents/cover-letter",
   PRICING: "/pricing",
+  SETTINGS: "/settings",
 };

@@ -55,8 +55,8 @@ export class AiService {
     private readonly limiter: AiRequestLimiterService,
   ) {}
 
-  async ask(userId: string, input: string, opts: AskOptions = {}) {
-    return this.limiter.runWithLimits(userId, async () => {
+  async ask(input: string, opts: AskOptions = {}) {
+    return this.limiter.runWithLimits(async () => {
       const accountId = this.cfg.get<string>('CLOUDFLARE_ACCOUNT_ID');
       const apiToken = this.cfg.get<string>('CLOUDFLARE_API_TOKEN');
 
@@ -109,7 +109,6 @@ export class AiService {
   }
 
   async generateResume(
-    userId: string,
     applicantInfo: string,
     job: { title: string; company: string; description: string },
   ): Promise<AiResumeResult> {
@@ -143,7 +142,7 @@ Parse the applicant's experience, education, projects, and certifications from t
       .filter(Boolean)
       .join('\n\n');
 
-    const result = await this.ask(userId, userPrompt, {
+    const result = await this.ask(userPrompt, {
       system: systemPrompt,
       maxOutputTokens: 2800,
     });

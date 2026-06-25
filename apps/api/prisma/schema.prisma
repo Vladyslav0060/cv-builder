@@ -44,7 +44,7 @@ model User {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   credential      Credential?
-  aiRequestUsages AiRequestUsage[]
+  usageRecords    UsageRecord[]
   oauth           OAuthAccount[]
   sessions        Session[]
   stripeCustomerId  String?
@@ -138,18 +138,24 @@ model Resume {
   updatedAt DateTime @updatedAt
 }
 
-model AiRequestUsage {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  day       DateTime @db.Date
-  count     Int      @default(0)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+enum UsageActionType {
+  CREATE
+  EXPORT
+}
 
-  @@unique([userId, day], map: "ai_request_usages_user_id_day_key")
-  @@index([day], map: "ai_request_usages_day_idx")
-  @@map("ai_request_usages")
+model UsageRecord {
+  id         String          @id @default(cuid())
+  userId     String          @map("user_id")
+  day        DateTime        @db.Date
+  actionType UsageActionType @map("action_type")
+  count      Int             @default(0)
+  createdAt  DateTime        @default(now()) @map("created_at")
+  updatedAt  DateTime        @updatedAt @map("updated_at")
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, day, actionType], map: "usage_records_user_id_day_action_type_key")
+  @@index([day], map: "usage_records_day_idx")
+  @@map("usage_records")
 }
 
 enum Tier {
@@ -175,7 +181,8 @@ model Subscription {
 
   status            SubscriptionStatus
   currentPeriodEnd  DateTime
+  cancelAtPeriodEnd Boolean @default(false)
   stripeSubscriptionId String @unique
-  
+
   user    User  @relation(fields: [userId], references: [id], onDelete: Cascade) 
 }

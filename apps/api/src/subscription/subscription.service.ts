@@ -1,13 +1,24 @@
 import Stripe, { Event } from 'stripe';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { SubscriptionStatus, Tier } from 'generated/prisma/enums';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { extractSubscriptionFields, getTierByPriceId } from './utils';
+import { TIER_DAILY_LIMITS } from 'src/usage/usage-limits';
+import { UsageQuotaService } from 'src/usage/usage-quota.service';
 import { PlanDto } from './dto/get-plans.dto';
+import { CurrentSubscriptionDto } from './dto/current-subscription.dto';
 
 @Injectable()
 export class SubscriptionService implements OnModuleInit {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly usageQuotaService: UsageQuotaService,
+  ) {}
 
   onModuleInit() {
     const required = [
@@ -91,6 +102,53 @@ export class SubscriptionService implements OnModuleInit {
     return [freePlan, proPlan, maxPlan];
   }
 
+  async getCurrentSubscription(
+    userId: string,
+  ): Promise<CurrentSubscriptionDto> {
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { userId },
+      select: {
+        tier: true,
+        status: true,
+        currentPeriodEnd: true,
+        cancelAtPeriodEnd: true,
+      },
+    });
+
+    const tier = await this.usageQuotaService.resolveTier(userId);
+
+    return {
+      tier,
+      status: subscription?.status ?? null,
+      currentPeriodEnd: subscription?.currentPeriodEnd ?? null,
+      cancelAtPeriodEnd: subscription?.cancelAtPeriodEnd ?? false,
+      limits: TIER_DAILY_LIMITS[tier],
+    };
+  }
+
+  async cancelSubscription(userId: string): Promise<void> {
+    const subscription = await this.prisma.subscription.findUnique({
+      where: { userId },
+      select: { stripeSubscriptionId: true, status: true },
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('No active subscription found');
+    }
+    if (subscription.status === SubscriptionStatus.canceled) {
+      throw new BadRequestException('Subscription is already canceled');
+    }
+
+    await this.stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+      cancel_at_period_end: true,
+    });
+
+    await this.prisma.subscription.update({
+      where: { userId },
+      data: { cancelAtPeriodEnd: true },
+    });
+  }
+
   constructEvent(rawBody: string | Buffer, signature: string): Event {
     return this.stripe.webhooks.constructEvent(
       rawBody,
@@ -107,7 +165,7 @@ export class SubscriptionService implements OnModuleInit {
           customer: stripeCustomerId,
           subscription,
         } = event.data.object;
-         if (!client_reference_id) return;
+        if (!client_reference_id) return;
 
         const stripeSubscription = await this.stripe.subscriptions.retrieve(
           subscription as string,
@@ -121,20 +179,20 @@ export class SubscriptionService implements OnModuleInit {
         await this.prisma.$transaction(async (tx) => {
           await tx.user.update({
             data: { stripeCustomerId: stripeCustomerId as string },
-            where: { id: client_reference_id as string },
+            where: { id: client_reference_id },
           });
 
           await tx.subscription.upsert({
             create: {
-              userId: client_reference_id as string,
+              userId: client_reference_id,
               stripeSubscriptionId: stripeSubscription.id,
-              status: stripeSubscription.status as SubscriptionStatus,
+              status: stripeSubscription.status,
               currentPeriodEnd: new Date(current_period_end * 1000),
               priceId,
               tier,
             },
             update: {
-              status: stripeSubscription.status as SubscriptionStatus,
+              status: stripeSubscription.status,
               currentPeriodEnd: new Date(current_period_end * 1000),
             },
             where: { stripeSubscriptionId: stripeSubscription.id },
@@ -148,8 +206,9 @@ export class SubscriptionService implements OnModuleInit {
           extractSubscriptionFields(stripeSubscription);
         await this.prisma.subscription.update({
           data: {
-            status: stripeSubscription.status as SubscriptionStatus,
+            status: stripeSubscription.status,
             currentPeriodEnd: new Date(current_period_end * 1000),
+            cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
           },
           where: {
             stripeSubscriptionId: stripeSubscription.id,
