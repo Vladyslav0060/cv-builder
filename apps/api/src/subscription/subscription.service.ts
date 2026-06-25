@@ -1,8 +1,9 @@
 import Stripe, { Event } from 'stripe';
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { SubscriptionStatus } from 'generated/prisma/enums';
+import { SubscriptionStatus, Tier } from 'generated/prisma/enums';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { extractSubscriptionFields, getTierByPriceId } from './utils';
+import { PlanDto } from './dto/get-plans.dto';
 
 @Injectable()
 export class SubscriptionService implements OnModuleInit {
@@ -46,6 +47,48 @@ export class SubscriptionService implements OnModuleInit {
       mode: 'subscription',
     });
     return session;
+  }
+
+  async getPlans(): Promise<PlanDto[]> {
+    const [proMonthly, proSixMonth, maxMonthly, maxSixMonth] =
+      await Promise.all(
+        [
+          process.env.STRIPE_PRO_MONTHLY_PRICE_ID,
+          process.env.STRIPE_PRO_6M_PRICE_ID,
+          process.env.STRIPE_MAX_MONTHLY_PRICE_ID,
+          process.env.STRIPE_MAX_6M_PRICE_ID,
+        ].map((priceId) => this.stripe.prices.retrieve(priceId as string)),
+      );
+
+    const freePlan: PlanDto = {
+      tier: null,
+      name: 'Free',
+      currency: proMonthly.currency,
+      monthlyAmount: 0,
+      monthlyPriceId: null,
+      sixMonthAmount: 0,
+      sixMonthPriceId: null,
+    };
+    const proPlan: PlanDto = {
+      tier: Tier.pro,
+      name: 'Pro',
+      currency: proMonthly.currency,
+      monthlyAmount: proMonthly.unit_amount,
+      monthlyPriceId: proMonthly.id,
+      sixMonthAmount: proSixMonth.unit_amount,
+      sixMonthPriceId: proSixMonth.id,
+    };
+    const maxPlan: PlanDto = {
+      tier: Tier.max,
+      name: 'Max',
+      currency: maxMonthly.currency,
+      monthlyAmount: maxMonthly.unit_amount,
+      monthlyPriceId: maxMonthly.id,
+      sixMonthAmount: maxSixMonth.unit_amount,
+      sixMonthPriceId: maxSixMonth.id,
+    };
+
+    return [freePlan, proPlan, maxPlan];
   }
 
   constructEvent(rawBody: string | Buffer, signature: string): Event {

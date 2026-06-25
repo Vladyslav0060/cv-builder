@@ -3,12 +3,14 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Get,
   Headers,
   Post,
   RawBodyRequest,
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBody, ApiOkResponse } from '@nestjs/swagger';
 import { Request } from 'express';
 import { SubscriptionService } from './subscription.service';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
@@ -17,10 +19,19 @@ import { SafeUser } from 'src/user/user.select';
 import { TierGuard } from 'src/auth/guards/tier.guard';
 import { RequireTier } from 'src/auth/decorators/require-tier.decorator';
 import { Tier } from 'generated/prisma/enums';
+import { PlanDto } from './dto/get-plans.dto';
+import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
+import { CheckoutSessionDto } from './dto/checkout-session.dto';
 
 @Controller('subscription')
 export class SubscriptionController {
   constructor(private subscriptionService: SubscriptionService) {}
+
+  @Get('plans')
+  @ApiOkResponse({ type: [PlanDto] })
+  getPlans(): Promise<PlanDto[]> {
+    return this.subscriptionService.getPlans();
+  }
 
   @Post('test')
   @UseGuards(TierGuard)
@@ -32,14 +43,17 @@ export class SubscriptionController {
 
   @Post('checkout-session')
   @UseGuards(AuthenticatedGuard)
+  @ApiBody({ type: CreateCheckoutSessionDto })
+  @ApiOkResponse({ type: CheckoutSessionDto })
   async createCheckoutSession(
     @CurrentUser() currentUser: SafeUser,
-    @Body() body: { priceId: string },
-  ): Promise<Stripe.Checkout.Session> {
-    return this.subscriptionService.createCheckoutSession(
+    @Body() body: CreateCheckoutSessionDto,
+  ): Promise<CheckoutSessionDto> {
+    const session = await this.subscriptionService.createCheckoutSession(
       currentUser.id,
       body.priceId,
     );
+    return { url: session.url };
   }
 
   @Post('webhook')

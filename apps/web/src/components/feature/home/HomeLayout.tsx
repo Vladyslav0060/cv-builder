@@ -2,6 +2,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/common/routes";
 
 import { ActionButton } from "./ActionButton";
 import { FeatureGrid } from "./FeatureGrid";
@@ -43,6 +44,14 @@ export const HomeLayout = () => {
                 See how it works
                 <ArrowRight className="size-4" />
               </Link>
+            </Button>
+            <Button
+              asChild
+              variant="ghost"
+              size="lg"
+              className="h-11 rounded-full px-6 text-base"
+            >
+              <Link href={ROUTES.PRICING}>View pricing</Link>
             </Button>
           </div>
         </div>

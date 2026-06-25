@@ -82,6 +82,11 @@ export function TopNav() {
                     >
                       New Document
                     </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => router.push(ROUTES.PRICING)}
+                    >
+                      Pricing
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleSignOut()}>
                       Sign out
                     </DropdownMenuItem>
