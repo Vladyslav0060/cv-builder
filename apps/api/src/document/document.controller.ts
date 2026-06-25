@@ -5,7 +5,7 @@ import {
   Param,
   Post,
   StreamableFile,
-  Session,
+  UseGuards,
 } from '@nestjs/common';
 import { DocumentService } from './document.service';
 import { ApiBody, ApiOkResponse, ApiParam } from '@nestjs/swagger';
@@ -25,6 +25,9 @@ import { ResumeExportPayloadDto } from './dto/resume-data.dto';
 import { DocumentType } from 'generated/prisma/enums';
 import { createResumeConstructorPdfBuffer } from './document-pdf';
 import { type ResumeExportPayload } from '../shared/resume-constructor-data';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { AuthenticatedGuard } from 'src/auth/guards/authenticated.guard';
+import { SafeUser } from 'src/user/user.select';
 
 function getDocumentTypeLabel(type: DocumentType) {
   return type === 'RESUME' ? 'resume' : 'cover letter';
@@ -63,12 +66,13 @@ export class DocumentController {
   @Get('resume/:documentId')
   @ApiParam({ name: 'documentId', example: '1', required: true })
   @ApiOkResponse({ type: ResumeExportPayloadDto })
+  @UseGuards(AuthenticatedGuard)
   async getResumeData(
-    @Session() session: any,
+    @CurrentUser() currentUser: SafeUser,
     @Param('documentId') documentId: string,
   ) {
     const resume = await this.documentService.getResumeByDocumentId(
-      session.passport.user,
+      currentUser.id,
       documentId,
     );
 
@@ -79,15 +83,16 @@ export class DocumentController {
   @ApiParam({ name: 'documentId', example: '1', required: true })
   @ApiBody({ type: ResumeExportPayloadDto })
   @ApiOkResponse({ type: ResumeExportPayloadDto })
+  @UseGuards(AuthenticatedGuard)
   async saveResumeData(
-    @Session() session: any,
+    @CurrentUser() currentUser: SafeUser,
     @Param('documentId') documentId: string,
     @Body() body: ResumeExportPayloadDto,
   ) {
     const resume = await this.documentService.upsertResume(
-      session.passport.user,
+      currentUser.id,
       documentId,
-      body as ResumeExportPayload,
+      body,
     );
 
     return toResumeExportPayload(resume);
@@ -96,13 +101,14 @@ export class DocumentController {
   @Get(':documentId')
   @ApiParam({ name: 'documentId', example: '1', required: true })
   @ApiOkResponse({ type: GetDocumentDto })
+  @UseGuards(AuthenticatedGuard)
   async getUserDocument(
-    @Session() session: any,
+    @CurrentUser() currentUser: SafeUser,
     @Param('documentId') documentId: string,
   ) {
     try {
       const document = await this.documentService.getUserDocumentById(
-        session.passport.user,
+        currentUser.id,
         documentId,
       );
       return toGetDocumentDto(document);
@@ -115,12 +121,13 @@ export class DocumentController {
   @ApiOkResponse({
     type: [GetDocumentsPreviewDto],
   })
+  @UseGuards(AuthenticatedGuard)
   async getUserDocumentsPreview(
-    @Session() session: any,
+    @CurrentUser() currentUser: SafeUser,
   ): Promise<GetDocumentsPreviewDto[]> {
     try {
       const documents = await this.documentService.getUserDocumentsPreview(
-        session.passport.user,
+        currentUser.id,
       );
       return documents?.map((document) => toGetDocumentsPreviewDto(document));
     } catch (error) {
@@ -133,8 +140,9 @@ export class DocumentController {
     type: CreateDocumentDto,
   })
   @ApiOkResponse({ type: GetDocumentDto })
+  @UseGuards(AuthenticatedGuard)
   async createDocument(
-    @Session() session: any,
+    @CurrentUser() currentUser: SafeUser,
     @Body() body: CreateDocumentDto,
   ) {
     const {
@@ -144,7 +152,7 @@ export class DocumentController {
       jobTitle,
       type,
     } = body;
-    const userId = session.passport.user;
+    const userId = currentUser.id;
     const maxOutputTokens = process.env.MAX_OUTPUT_TOKENS
       ? Number(process.env.MAX_OUTPUT_TOKENS)
       : 600;
@@ -186,12 +194,19 @@ Description: ${description}`,
     }
 
     const [document, aiResumeData] = await Promise.all([
-      this.documentService.createDocument(session.passport.user, body, documentContent),
+      this.documentService.createDocument(userId, body, documentContent),
       type === 'RESUME' && applicantSource && applicantInfo
         ? this.aiService
-            .generateResume(userId, applicantInfo, { title: jobTitle, company, description })
+            .generateResume(userId, applicantInfo, {
+              title: jobTitle,
+              company,
+              description,
+            })
             .catch((err) => {
-              console.error('[createDocument] generateResume failed:', err?.message ?? err);
+              console.error(
+                '[createDocument] generateResume failed:',
+                err?.message ?? err,
+              );
               return null as AiResumeResult | null;
             })
         : Promise.resolve(null as AiResumeResult | null),
@@ -209,10 +224,13 @@ Description: ${description}`,
         .filter(Boolean)
         .join(', ');
       const fallbackSkills = applicantSource.skills
-        ? applicantSource.skills.split(/[,\n]+/).map((s) => s.trim()).filter(Boolean)
+        ? applicantSource.skills
+            .split(/[,\n]+/)
+            .map((s) => s.trim())
+            .filter(Boolean)
         : [];
 
-      await this.documentService.upsertResume(userId, document!.id, {
+      await this.documentService.upsertResume(userId, document.id, {
         resume: {
           personalInfo: {
             fullName,
@@ -220,10 +238,15 @@ Description: ${description}`,
             email: applicantSource.email ?? '',
             ...(applicantSource.phone && { phone: applicantSource.phone }),
             ...(location && { location }),
-            ...(applicantSource.portfolio && { website: applicantSource.portfolio }),
-            ...(applicantSource.linkedIn && { linkedin: applicantSource.linkedIn }),
+            ...(applicantSource.portfolio && {
+              website: applicantSource.portfolio,
+            }),
+            ...(applicantSource.linkedIn && {
+              linkedin: applicantSource.linkedIn,
+            }),
           },
-          summary: aiResumeData?.summary ?? applicantSource.summary ?? undefined,
+          summary:
+            aiResumeData?.summary ?? applicantSource.summary ?? undefined,
           experience: (aiResumeData?.experience ?? []).map((exp) => ({
             ...exp,
             endDate: exp.endDate ?? undefined,

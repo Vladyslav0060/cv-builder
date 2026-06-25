@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import {
   BadRequestException,
   Body,
@@ -32,6 +31,8 @@ import { EnrichedUserDto } from './dto/enriched-user.dto';
 import { toEnrichedUserDto } from 'src/auth/mappers/enriched-user.mapper';
 import { LogoutResponseDto } from 'src/auth/dto/logout-response.dto';
 import { Request, Response } from 'express';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { SafeUser } from './user.select';
 
 @Controller('user')
 export class UserController {
@@ -53,8 +54,11 @@ export class UserController {
       },
     },
   })
-  async updateUser(@Req() req: any, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.updateUser(req.user.id, updateUserDto);
+  async updateUser(
+    @CurrentUser() currentUser: SafeUser,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
+    return this.userService.updateUser(currentUser.id, updateUserDto);
   }
 
   @Post('avatar')
@@ -72,38 +76,49 @@ export class UserController {
       limits: { fileSize: 5 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
         if (!file.mimetype.startsWith('image/')) {
-          return cb(new BadRequestException('Only image files are allowed'), false);
+          return cb(
+            new BadRequestException('Only image files are allowed'),
+            false,
+          );
         }
         cb(null, true);
       },
     }),
   )
   async uploadAvatar(
-    @Req() req: any,
-    @UploadedFile() file: { buffer: Buffer; mimetype: string; originalname: string; size: number },
+    @CurrentUser() currentUser: SafeUser,
+    @UploadedFile()
+    file: {
+      buffer: Buffer;
+      mimetype: string;
+      originalname: string;
+      size: number;
+    },
   ) {
     if (!file) throw new BadRequestException('No file provided');
-    const userId: string = req.user.id;
+    const userId: string = currentUser.id;
     const avatarUrl = `/user/avatar/${userId}?v=${Date.now()}`;
-    await this.userService.updateAvatar(userId, file.buffer, file.mimetype, avatarUrl);
+    await this.userService.updateAvatar(
+      userId,
+      file.buffer,
+      file.mimetype,
+      avatarUrl,
+    );
     return { avatarUrl };
   }
 
   @Delete('avatar')
   @ApiOperation({ summary: 'Remove avatar' })
   @UseGuards(AuthenticatedGuard)
-  async removeAvatar(@Req() req: any) {
-    await this.userService.deleteAvatar(req.user.id);
+  async removeAvatar(@CurrentUser() currentUser: SafeUser) {
+    await this.userService.deleteAvatar(currentUser.id);
     return { ok: true };
   }
 
   @Get('avatar/:userId')
   @ApiOperation({ summary: 'Serve avatar image' })
   @ApiParam({ name: 'userId', required: true })
-  async getAvatar(
-    @Param('userId') userId: string,
-    @Res() res: Response,
-  ) {
+  async getAvatar(@Param('userId') userId: string, @Res() res: Response) {
     const avatar = await this.userService.getAvatarData(userId);
     if (!avatar) throw new NotFoundException('No avatar found');
     (res as any).set('Content-Type', avatar.mimeType);
@@ -119,14 +134,16 @@ export class UserController {
   })
   @UseGuards(AuthenticatedGuard)
   deleteMe(
-    @Req() req: Request & { user?: any },
+    @CurrentUser() currentUser: SafeUser,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ): Promise<LogoutResponseDto> {
-    const userId: string = (req as any).user.id;
+    const userId: string = currentUser.id;
 
     return new Promise<LogoutResponseDto>((resolve, reject) => {
       req.logout((err: any) => {
-        if (err) return reject(new InternalServerErrorException('Logout failed'));
+        if (err)
+          return reject(new InternalServerErrorException('Logout failed'));
 
         req.session?.destroy(async (sessionErr: any) => {
           if (sessionErr) {
