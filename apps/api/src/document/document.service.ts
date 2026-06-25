@@ -54,6 +54,18 @@ export class DocumentService {
     } catch (error) {}
   }
 
+  async updateDocumentContent(
+    userId: string,
+    documentId: string,
+    content: string,
+  ): Promise<GetDocumentDto> {
+    return this.prisma.document.update({
+      where: { id: documentId, AND: { userId } },
+      data: { content },
+      select: documentSelect,
+    });
+  }
+
   async getResumeByDocumentId(userId: string, documentId: string) {
     await this.prisma.document.findUniqueOrThrow({
       where: { id: documentId, AND: { userId } },

@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   StreamableFile,
   UseGuards,
@@ -13,6 +14,7 @@ import {
   CreateDocumentDto,
   CreateDocumentDtoCreationMode,
 } from './dto/create-document.dto';
+import { UpdateDocumentContentDto } from './dto/update-document-content.dto';
 import { UserService } from 'src/user/user.service';
 import { buildApplicantInfo } from 'src/ai/utils';
 import { AiService, AiResumeResult } from 'src/ai/ai.service';
@@ -123,6 +125,24 @@ export class DocumentController {
     } catch (error) {
       throw error;
     }
+  }
+
+  @Patch(':documentId/content')
+  @ApiParam({ name: 'documentId', example: '1', required: true })
+  @ApiBody({ type: UpdateDocumentContentDto })
+  @ApiOkResponse({ type: GetDocumentDto })
+  @UseGuards(AuthenticatedGuard)
+  async updateDocumentContent(
+    @CurrentUser() currentUser: SafeUser,
+    @Param('documentId') documentId: string,
+    @Body() body: UpdateDocumentContentDto,
+  ) {
+    const document = await this.documentService.updateDocumentContent(
+      currentUser.id,
+      documentId,
+      body.content,
+    );
+    return toGetDocumentDto(document);
   }
 
   @Get('all/preview')

@@ -251,7 +251,7 @@ export default function Documents() {
                       className="w-full justify-between"
                       onClick={() =>
                         router.push(
-                          `${ROUTES.DOCUMENTS}/${latestDocument.type.toLowerCase()}/${latestDocument.id}`,
+                          `${ROUTES.DOCUMENTS}/${latestDocument.type.toLowerCase().replaceAll("_", "-")}/${latestDocument.id}`,
                         )
                       }
                     >
