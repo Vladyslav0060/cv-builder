@@ -17,16 +17,18 @@ import { PlanDto } from "@/api/generated.schemas";
 type BillingCycle = "monthly" | "sixMonth";
 
 const PLAN_PERKS: Record<string, string[]> = {
-  Free: ["1 active resume", "Basic templates", "PDF export"],
+  Free: ["1 creation/day", "1 export/day", "Basic templates"],
   Pro: [
-    "Unlimited resumes & cover letters",
+    "10 creations/day",
+    "10 exports/day",
     "AI-tailored writing",
     "All templates",
   ],
   Max: [
+    "50 creations/day",
+    "50 exports/day",
     "Everything in Pro",
     "Priority AI generation",
-    "Early access to new features",
   ],
 };
 

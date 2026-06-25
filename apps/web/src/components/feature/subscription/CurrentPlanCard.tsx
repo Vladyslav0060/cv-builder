@@ -58,9 +58,7 @@ export function CurrentPlanCard() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Your plan</CardTitle>
-          <Badge variant={isPaid ? "default" : "secondary"}>
-            {tierLabel}
-          </Badge>
+          <Badge variant={isPaid ? "default" : "secondary"}>{tierLabel}</Badge>
         </div>
         <CardDescription>
           {subscription.cancelAtPeriodEnd && periodEndLabel
@@ -97,10 +95,7 @@ export function CurrentPlanCard() {
 
         {isPaid && !subscription.cancelAtPeriodEnd && (
           <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-            <Button
-              variant="ghost"
-              onClick={() => setConfirmOpen(true)}
-            >
+            <Button variant="destructive" onClick={() => setConfirmOpen(true)}>
               Cancel subscription
             </Button>
             <AlertDialogContent>
