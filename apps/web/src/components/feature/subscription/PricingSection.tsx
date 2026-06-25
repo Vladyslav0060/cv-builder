@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { ROUTES } from "@/common/routes";
 import { usePlans } from "@/hooks/subscription/usePlans";
 import { useCreateCheckoutSession } from "@/hooks/subscription/useCreateCheckoutSession";
+import { useGetCurrentSubscription } from "@/hooks/subscription/useGetCurrentSubscription";
 import { PlanDto } from "@/api/generated.schemas";
 
 type BillingCycle = "monthly" | "sixMonth";
@@ -45,6 +46,9 @@ export function PricingSection() {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const { data: plans, isLoading } = usePlans();
   const { data: me } = useMe();
+  const { data: currentSubscription } = useGetCurrentSubscription({
+    enabled: !!me?.isAuthenticated,
+  });
   const router = useRouter();
   const checkoutSession = useCreateCheckoutSession();
 
@@ -101,6 +105,9 @@ export function PricingSection() {
                 cycle === "monthly" ? plan.monthlyAmount : plan.sixMonthAmount;
               const isFree = plan.tier === null;
               const isPro = plan.tier === "pro";
+              const planTier = plan.tier ?? "free";
+              const isCurrentPlan =
+                planTier === (currentSubscription?.tier ?? "free");
               const isPending =
                 checkoutSession.isPending &&
                 checkoutSession.variables?.priceId ===
@@ -142,10 +149,10 @@ export function PricingSection() {
                     </ul>
                     <Button
                       variant={isPro ? "default" : "outline"}
-                      disabled={isFree || isPending}
+                      disabled={isCurrentPlan || isPending}
                       onClick={() => handleChoosePlan(plan)}
                     >
-                      {isFree
+                      {isCurrentPlan
                         ? "Your current plan"
                         : isPending
                           ? "Redirecting…"

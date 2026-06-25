@@ -12,7 +12,7 @@ export type CurrentSubscriptionDto = {
   limits: { CREATE: number; EXPORT: number };
 };
 
-export function useGetCurrentSubscription() {
+export function useGetCurrentSubscription(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["subscription", "current"],
     queryFn: async () => {
@@ -22,5 +22,6 @@ export function useGetCurrentSubscription() {
       });
       return res.data;
     },
+    enabled: options?.enabled ?? true,
   });
 }
