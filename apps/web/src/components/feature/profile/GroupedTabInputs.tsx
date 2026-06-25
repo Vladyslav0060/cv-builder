@@ -12,6 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { AvatarUploadInput } from "./AvatarUploadInput";
 import { useCurrentUser } from "@/hooks/auth/current-user";
 import { resolveAvatarUrl } from "@/lib/avatar-url";
+import { useSignOut } from "@/hooks/auth/useSignOut";
+import { Button } from "@/components/ui/button";
+import { SignOutIcon } from "@phosphor-icons/react";
 
 const CONTACT_FIELDS = [
   {
@@ -39,6 +42,7 @@ export interface TabGroupProps {
 export const PersonalInfoInputs = ({ isPending }: TabGroupProps) => {
   const form = useFormContext();
   const currentUser = useCurrentUser();
+  const { mutate: signOut, isPending: isSigningOut } = useSignOut();
 
   const initials =
     currentUser?.firstName
@@ -96,6 +100,17 @@ export const PersonalInfoInputs = ({ isPending }: TabGroupProps) => {
         ))}
       </div>
 
+      {/* <div className="flex justify-end border-t pt-6">
+        <Button
+          type="button"
+          variant="destructive"
+          disabled={isSigningOut}
+          onClick={() => signOut()}
+        >
+          <SignOutIcon size={15} />
+          {isSigningOut ? "Signing out…" : "Sign out"}
+        </Button>
+      </div> */}
     </>
   );
 };
