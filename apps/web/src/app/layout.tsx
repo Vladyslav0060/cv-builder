@@ -18,9 +18,34 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://cv-builder-chi-black.vercel.app";
+const SITE_NAME = "CV Builder";
+const SITE_DESCRIPTION =
+  "Build and export polished, ATS-friendly resumes and cover letters in minutes.";
+
 export const metadata: Metadata = {
-  title: "CV Builder",
-  description: "Build and export polished resumes and cover letters.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default async function RootLayout({
