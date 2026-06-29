@@ -1,59 +1,20 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Injectable } from '@nestjs/common';
 
 const MAX_CONCURRENT_REQUESTS = 2;
-const MAX_DAILY_REQUESTS = 7;
 
 @Injectable()
 export class AiRequestLimiterService {
   private activeRequests = 0;
   private readonly waitQueue: Array<() => void> = [];
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly cfg: ConfigService,
-  ) {}
-
-  async runWithLimits<T>(userId: string, task: () => Promise<T>): Promise<T> {
+  async runWithLimits<T>(task: () => Promise<T>): Promise<T> {
     const releaseConcurrencySlot = await this.acquireConcurrencySlot();
 
     try {
-      await this.consumeDailyQuota(userId);
       return await task();
     } finally {
       releaseConcurrencySlot();
     }
-  }
-
-  async getDailyUsage(userId: string) {
-    const total = MAX_DAILY_REQUESTS;
-
-    if (this.isDevelopment()) {
-      return {
-        used: 0,
-        total,
-        remaining: total,
-        unlimited: true,
-      };
-    }
-
-    const day = this.getUtcDayStart();
-    const rows = await this.prisma.$queryRaw<{ count: number }[]>`
-      SELECT COALESCE(SUM("count"), 0)::int AS "count"
-      FROM "ai_request_usages"
-      WHERE "user_id" = ${userId}
-        AND "day" = ${day}
-    `;
-
-    const used = rows[0]?.count ?? 0;
-
-    return {
-      used,
-      total,
-      remaining: Math.max(total - used, 0),
-      unlimited: false,
-    };
   }
 
   private acquireConcurrencySlot(): Promise<() => void> {
@@ -77,50 +38,5 @@ export class AiRequestLimiterService {
     if (next) {
       next();
     }
-  }
-
-  private async consumeDailyQuota(userId: string) {
-    if (this.isDevelopment()) {
-      return;
-    }
-
-    const day = this.getUtcDayStart();
-
-    const rows = await this.prisma.$queryRaw<{ count: number }[]>`
-      INSERT INTO "ai_request_usages" ("id", "user_id", "day", "count", "created_at", "updated_at")
-      VALUES (
-        md5(random()::text || clock_timestamp()::text),
-        ${userId},
-        ${day},
-        1,
-        NOW(),
-        NOW()
-      )
-      ON CONFLICT ("user_id", "day")
-      DO UPDATE SET
-        "count" = "ai_request_usages"."count" + 1,
-        "updated_at" = NOW()
-      WHERE "ai_request_usages"."count" < ${MAX_DAILY_REQUESTS}
-      RETURNING "count";
-    `;
-
-    if (rows.length === 0) {
-      throw new HttpException(
-        `Daily AI generation limit reached. Limit: ${MAX_DAILY_REQUESTS} requests per account per day.`,
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-  }
-
-  private getUtcDayStart() {
-    const now = new Date();
-    return new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-    );
-  }
-
-  private isDevelopment() {
-    const nodeEnv = this.cfg.get<string>('NODE_ENV') ?? process.env.NODE_ENV;
-    return nodeEnv === 'development' || nodeEnv === 'dev';
   }
 }

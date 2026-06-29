@@ -32,7 +32,13 @@ export const buildApplicantInfo = (userProfile: ApplicantInfoLike): string => {
       .join(' ')}
 Email: ${userProfile?.email ?? ''}
 Phone: ${userProfile?.phone ?? ''}
-Address: ${[userProfile?.address, userProfile?.city, userProfile?.state, userProfile?.zip, userProfile?.country]
+Address: ${[
+    userProfile?.address,
+    userProfile?.city,
+    userProfile?.state,
+    userProfile?.zip,
+    userProfile?.country,
+  ]
     .filter(Boolean)
     .join(', ')}
 LinkedIn: ${userProfile?.linkedIn ?? ''}

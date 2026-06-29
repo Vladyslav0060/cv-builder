@@ -2,6 +2,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/common/routes";
 
 import { ActionButton } from "./ActionButton";
 import { FeatureGrid } from "./FeatureGrid";
@@ -27,8 +28,8 @@ export const HomeLayout = () => {
 
           <p className="mt-6 max-w-xl text-lg text-muted-foreground text-pretty">
             CV Assistant turns your experience into a polished, ATS-friendly
-            resume and cover letter, tailored by AI in minutes and exported
-            as a pixel-perfect PDF.
+            resume and cover letter, tailored by AI in minutes and exported as a
+            pixel-perfect PDF.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
@@ -60,8 +61,8 @@ export const HomeLayout = () => {
             Your next job starts with a better resume
           </h2>
           <p className="max-w-xl text-muted-foreground text-pretty">
-            Create a free account and have a tailored, ATS-ready resume ready
-            to send in minutes.
+            Create a free account and have a tailored, ATS-ready resume ready to
+            send in minutes.
           </p>
           <ActionButton />
         </div>
@@ -70,7 +71,9 @@ export const HomeLayout = () => {
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:px-6 lg:px-8">
           <span className="font-medium text-foreground">CV Assistant</span>
-          <span>© {new Date().getFullYear()} CV Assistant. All rights reserved.</span>
+          <span>
+            © {new Date().getFullYear()} CV Assistant. All rights reserved.
+          </span>
         </div>
       </footer>
     </main>

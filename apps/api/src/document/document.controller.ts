@@ -3,9 +3,10 @@ import {
   Controller,
   Get,
   Param,
+  Patch,
   Post,
   StreamableFile,
-  Session,
+  UseGuards,
 } from '@nestjs/common';
 import { DocumentService } from './document.service';
 import { ApiBody, ApiOkResponse, ApiParam } from '@nestjs/swagger';
@@ -13,6 +14,7 @@ import {
   CreateDocumentDto,
   CreateDocumentDtoCreationMode,
 } from './dto/create-document.dto';
+import { UpdateDocumentContentDto } from './dto/update-document-content.dto';
 import { UserService } from 'src/user/user.service';
 import { buildApplicantInfo } from 'src/ai/utils';
 import { AiService, AiResumeResult } from 'src/ai/ai.service';
@@ -25,6 +27,10 @@ import { ResumeExportPayloadDto } from './dto/resume-data.dto';
 import { DocumentType } from 'generated/prisma/enums';
 import { createResumeConstructorPdfBuffer } from './document-pdf';
 import { type ResumeExportPayload } from '../shared/resume-constructor-data';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { AuthenticatedGuard } from 'src/auth/guards/authenticated.guard';
+import { SafeUser } from 'src/user/user.select';
+import { UsageQuotaService } from 'src/usage/usage-quota.service';
 
 function getDocumentTypeLabel(type: DocumentType) {
   return type === 'RESUME' ? 'resume' : 'cover letter';
@@ -36,6 +42,7 @@ export class DocumentController {
     private documentService: DocumentService,
     private userService: UserService,
     private aiService: AiService,
+    private usageQuotaService: UsageQuotaService,
   ) {}
 
   @Post('resume/pdf')
@@ -44,7 +51,13 @@ export class DocumentController {
       type: 'object',
     },
   })
-  async exportResumePdf(@Body() payload: ResumeExportPayload) {
+  @UseGuards(AuthenticatedGuard)
+  async exportResumePdf(
+    @CurrentUser() currentUser: SafeUser,
+    @Body() payload: ResumeExportPayload,
+  ) {
+    await this.usageQuotaService.consumeQuota(currentUser.id, 'EXPORT');
+
     const pdfBuffer = await createResumeConstructorPdfBuffer(
       payload.resume,
       payload.template,
@@ -63,12 +76,13 @@ export class DocumentController {
   @Get('resume/:documentId')
   @ApiParam({ name: 'documentId', example: '1', required: true })
   @ApiOkResponse({ type: ResumeExportPayloadDto })
+  @UseGuards(AuthenticatedGuard)
   async getResumeData(
-    @Session() session: any,
+    @CurrentUser() currentUser: SafeUser,
     @Param('documentId') documentId: string,
   ) {
     const resume = await this.documentService.getResumeByDocumentId(
-      session.passport.user,
+      currentUser.id,
       documentId,
     );
 
@@ -79,15 +93,16 @@ export class DocumentController {
   @ApiParam({ name: 'documentId', example: '1', required: true })
   @ApiBody({ type: ResumeExportPayloadDto })
   @ApiOkResponse({ type: ResumeExportPayloadDto })
+  @UseGuards(AuthenticatedGuard)
   async saveResumeData(
-    @Session() session: any,
+    @CurrentUser() currentUser: SafeUser,
     @Param('documentId') documentId: string,
     @Body() body: ResumeExportPayloadDto,
   ) {
     const resume = await this.documentService.upsertResume(
-      session.passport.user,
+      currentUser.id,
       documentId,
-      body as ResumeExportPayload,
+      body,
     );
 
     return toResumeExportPayload(resume);
@@ -96,13 +111,14 @@ export class DocumentController {
   @Get(':documentId')
   @ApiParam({ name: 'documentId', example: '1', required: true })
   @ApiOkResponse({ type: GetDocumentDto })
+  @UseGuards(AuthenticatedGuard)
   async getUserDocument(
-    @Session() session: any,
+    @CurrentUser() currentUser: SafeUser,
     @Param('documentId') documentId: string,
   ) {
     try {
       const document = await this.documentService.getUserDocumentById(
-        session.passport.user,
+        currentUser.id,
         documentId,
       );
       return toGetDocumentDto(document);
@@ -111,16 +127,35 @@ export class DocumentController {
     }
   }
 
+  @Patch(':documentId/content')
+  @ApiParam({ name: 'documentId', example: '1', required: true })
+  @ApiBody({ type: UpdateDocumentContentDto })
+  @ApiOkResponse({ type: GetDocumentDto })
+  @UseGuards(AuthenticatedGuard)
+  async updateDocumentContent(
+    @CurrentUser() currentUser: SafeUser,
+    @Param('documentId') documentId: string,
+    @Body() body: UpdateDocumentContentDto,
+  ) {
+    const document = await this.documentService.updateDocumentContent(
+      currentUser.id,
+      documentId,
+      body.content,
+    );
+    return toGetDocumentDto(document);
+  }
+
   @Get('all/preview')
   @ApiOkResponse({
     type: [GetDocumentsPreviewDto],
   })
+  @UseGuards(AuthenticatedGuard)
   async getUserDocumentsPreview(
-    @Session() session: any,
+    @CurrentUser() currentUser: SafeUser,
   ): Promise<GetDocumentsPreviewDto[]> {
     try {
       const documents = await this.documentService.getUserDocumentsPreview(
-        session.passport.user,
+        currentUser.id,
       );
       return documents?.map((document) => toGetDocumentsPreviewDto(document));
     } catch (error) {
@@ -133,8 +168,9 @@ export class DocumentController {
     type: CreateDocumentDto,
   })
   @ApiOkResponse({ type: GetDocumentDto })
+  @UseGuards(AuthenticatedGuard)
   async createDocument(
-    @Session() session: any,
+    @CurrentUser() currentUser: SafeUser,
     @Body() body: CreateDocumentDto,
   ) {
     const {
@@ -144,7 +180,9 @@ export class DocumentController {
       jobTitle,
       type,
     } = body;
-    const userId = session.passport.user;
+    const userId = currentUser.id;
+    await this.usageQuotaService.consumeQuota(userId, 'CREATE');
+
     const maxOutputTokens = process.env.MAX_OUTPUT_TOKENS
       ? Number(process.env.MAX_OUTPUT_TOKENS)
       : 600;
@@ -178,7 +216,7 @@ Description: ${description}`,
       ]
         .filter(Boolean)
         .join('\n\n');
-      const response = await this.aiService.ask(userId, userPrompt, {
+      const response = await this.aiService.ask(userPrompt, {
         system: systemPrompt,
         maxOutputTokens,
       });
@@ -186,12 +224,19 @@ Description: ${description}`,
     }
 
     const [document, aiResumeData] = await Promise.all([
-      this.documentService.createDocument(session.passport.user, body, documentContent),
+      this.documentService.createDocument(userId, body, documentContent),
       type === 'RESUME' && applicantSource && applicantInfo
         ? this.aiService
-            .generateResume(userId, applicantInfo, { title: jobTitle, company, description })
+            .generateResume(applicantInfo, {
+              title: jobTitle,
+              company,
+              description,
+            })
             .catch((err) => {
-              console.error('[createDocument] generateResume failed:', err?.message ?? err);
+              console.error(
+                '[createDocument] generateResume failed:',
+                err?.message ?? err,
+              );
               return null as AiResumeResult | null;
             })
         : Promise.resolve(null as AiResumeResult | null),
@@ -209,10 +254,13 @@ Description: ${description}`,
         .filter(Boolean)
         .join(', ');
       const fallbackSkills = applicantSource.skills
-        ? applicantSource.skills.split(/[,\n]+/).map((s) => s.trim()).filter(Boolean)
+        ? applicantSource.skills
+            .split(/[,\n]+/)
+            .map((s) => s.trim())
+            .filter(Boolean)
         : [];
 
-      await this.documentService.upsertResume(userId, document!.id, {
+      await this.documentService.upsertResume(userId, document.id, {
         resume: {
           personalInfo: {
             fullName,
@@ -220,10 +268,15 @@ Description: ${description}`,
             email: applicantSource.email ?? '',
             ...(applicantSource.phone && { phone: applicantSource.phone }),
             ...(location && { location }),
-            ...(applicantSource.portfolio && { website: applicantSource.portfolio }),
-            ...(applicantSource.linkedIn && { linkedin: applicantSource.linkedIn }),
+            ...(applicantSource.portfolio && {
+              website: applicantSource.portfolio,
+            }),
+            ...(applicantSource.linkedIn && {
+              linkedin: applicantSource.linkedIn,
+            }),
           },
-          summary: aiResumeData?.summary ?? applicantSource.summary ?? undefined,
+          summary:
+            aiResumeData?.summary ?? applicantSource.summary ?? undefined,
           experience: (aiResumeData?.experience ?? []).map((exp) => ({
             ...exp,
             endDate: exp.endDate ?? undefined,

@@ -13,6 +13,7 @@ import { FieldGroup } from "@/components/ui/field";
 import { UserControllerUpdateUserBody } from "@/api/models/user/user.zod";
 import { useEnrichedUser } from "@/hooks/user/useEnrichedUser";
 import { useCurrentUser } from "@/hooks/auth/current-user";
+import { useSignOut } from "@/hooks/auth/useSignOut";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ import {
   TabGroupProps,
 } from "./GroupedTabInputs";
 import { Typography } from "@/components/ui/typography";
+import { SignOutIcon } from "@phosphor-icons/react";
 
 // const profileSchema = z.object({
 //   email: z.email("Invalid email").optional(),
@@ -90,6 +92,7 @@ export const ProfileForm = () => {
   const me = useCurrentUser();
   const { data: user } = useEnrichedUser(me?.id);
   const { mutateAsync, isPending, isError } = useUpdateUser();
+    const { mutate: signOut, isPending: isSigningOut } = useSignOut();
 
   const form = useForm<ProfileFormValues>({
     // resolver: zodResolver(profileSchema),
@@ -266,6 +269,18 @@ export const ProfileForm = () => {
             </p>
           )}
         </form>
+
+        <div className="flex justify-end">
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={isSigningOut}
+            onClick={() => signOut()}
+          >
+            <SignOutIcon size={15} />
+            {isSigningOut ? "Signing out…" : "Sign out"}
+          </Button>
+        </div>
       </Tabs>
     </FormProvider>
   );

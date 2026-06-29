@@ -11,4 +11,6 @@ export const ROUTES = {
   DOCUMENTS: "/documents",
   RESUME: "/documents/resume",
   COVER_LETTER: "/documents/cover-letter",
+  PRICING: "/pricing",
+  SETTINGS: "/settings",
 };

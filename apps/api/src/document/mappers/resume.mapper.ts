@@ -28,12 +28,14 @@ export const toResumeExportPayload = (resume: Resume): ResumeExportPayload => {
       projects: (resume.projects as unknown as ResumeProject[] | null)?.length
         ? (resume.projects as unknown as ResumeProject[])
         : undefined,
-      certifications: (resume.certifications as unknown as ResumeCertification[] | null)
-        ?.length
+      certifications: (
+        resume.certifications as unknown as ResumeCertification[] | null
+      )?.length
         ? (resume.certifications as unknown as ResumeCertification[])
         : undefined,
     },
     template: (resume.template ?? undefined) as ResumeExportPayload['template'],
-    colorScheme: (resume.colorScheme ?? undefined) as ResumeExportPayload['colorScheme'],
+    colorScheme: (resume.colorScheme ??
+      undefined) as ResumeExportPayload['colorScheme'],
   };
 };

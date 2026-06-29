@@ -16,6 +16,12 @@ import { MailService } from './mail.service';
     PrismaModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, MailService, LocalStrategy, GoogleStrategy, SessionSerializer],
+  providers: [
+    AuthService,
+    MailService,
+    LocalStrategy,
+    GoogleStrategy,
+    SessionSerializer,
+  ],
 })
 export class AuthModule {}

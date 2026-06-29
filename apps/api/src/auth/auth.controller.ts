@@ -25,6 +25,8 @@ import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { CurrentUser } from './decorators/current-user.decorator';
+import { SafeUser } from 'src/user/user.select';
 
 @Controller('auth')
 export class AuthController {
@@ -83,8 +85,11 @@ export class AuthController {
   @ApiOperation({ summary: 'Verify email address with 6-digit code' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthenticatedGuard)
-  verifyEmail(@Req() req: any, @Body() dto: VerifyEmailDto) {
-    return this.authService.verifyEmail(req.user.id, dto.code);
+  verifyEmail(
+    @CurrentUser() currentUser: SafeUser,
+    @Body() dto: VerifyEmailDto,
+  ) {
+    return this.authService.verifyEmail(currentUser.id, dto.code);
   }
 
   @Post('forgot-password')
@@ -105,8 +110,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Resend email verification link' })
   @HttpCode(HttpStatus.OK)
   @UseGuards(AuthenticatedGuard)
-  resendVerification(@Req() req: any) {
-    return this.authService.resendVerification(req.user.id);
+  resendVerification(@CurrentUser() currentUser: SafeUser) {
+    return this.authService.resendVerification(currentUser.id);
   }
 
   @Get('google')
@@ -138,7 +143,9 @@ export class AuthController {
   }
 
   @Post('transfer-session')
-  @ApiOperation({ summary: 'Exchange a Google OAuth transfer token for a session' })
+  @ApiOperation({
+    summary: 'Exchange a Google OAuth transfer token for a session',
+  })
   @HttpCode(HttpStatus.OK)
   async transferSession(
     @Req() req: any,
@@ -170,9 +177,7 @@ export class AuthController {
   @Get('me')
   @ApiOkResponse({ type: MeDto })
   @UseGuards(AuthenticatedGuard)
-  me(@Req() req: any): MeDto {
-    console.log('req?.user: ', req?.user);
-    if (!req.user) throw new UnauthorizedException();
-    return toMeDto(req.user);
+  me(@CurrentUser() currentUser: SafeUser): MeDto {
+    return toMeDto(currentUser);
   }
 }

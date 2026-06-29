@@ -4,6 +4,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { DocumentModule } from './document/document.module';
+import { SubscriptionModule } from './subscription/subscription.module';
+import { UsageModule } from './usage/usage.module';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { DocumentModule } from './document/document.module';
     }),
     AuthModule,
     DocumentModule,
+    SubscriptionModule,
+    UsageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

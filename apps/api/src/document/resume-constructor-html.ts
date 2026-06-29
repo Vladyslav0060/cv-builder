@@ -2,13 +2,13 @@ import type {
   ResumeColorSchemeId,
   ResumeData,
   ResumeTemplateId,
-} from "../shared/resume-constructor-data";
-import { resumeColorSchemes } from "../shared/resume-constructor-data";
+} from '../shared/resume-constructor-data';
+import { resumeColorSchemes } from '../shared/resume-constructor-data';
 import {
   RESUME_A4_HEIGHT_PX,
   RESUME_A4_WIDTH_PX,
   resumeConstructorLayout,
-} from "../shared/resume-constructor-layout";
+} from '../shared/resume-constructor-layout';
 
 type RenderResumeConstructorHtmlParams = {
   resume: ResumeData;
@@ -27,20 +27,20 @@ function getTheme(colorScheme: ResumeColorSchemeId): Theme {
 
 function escapeHtml(value: string) {
   return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function toHref(value: string) {
   if (/^https?:\/\//.test(value)) return value;
-  if (value.includes("@") && !value.startsWith("mailto:")) {
+  if (value.includes('@') && !value.startsWith('mailto:')) {
     return `mailto:${value}`;
   }
   if (/^\+?[\d\s().-]+$/.test(value)) {
-    return `tel:${value.replace(/\s+/g, "")}`;
+    return `tel:${value.replace(/\s+/g, '')}`;
   }
   if (/^[\w.-]+\.[a-z]{2,}(\/.*)?$/i.test(value)) {
     return `https://${value}`;
@@ -80,7 +80,7 @@ function renderContacts(resume: ResumeData) {
       const safe = escapeHtml(item);
       return `<a class="contact-link" href="${href}">${safe}</a>`;
     })
-    .join("");
+    .join('');
 }
 
 function renderSkillChips(skills: string[], theme: Theme) {
@@ -90,7 +90,7 @@ function renderSkillChips(skills: string[], theme: Theme) {
       (skill) =>
         `<span class="chip chip--light" style="border-color:${theme.border};background:${theme.accentMuted};">${escapeHtml(skill)}</span>`,
     )
-    .join("");
+    .join('');
 }
 
 function renderModernSkillChips(skills: string[], theme: Theme) {
@@ -100,14 +100,14 @@ function renderModernSkillChips(skills: string[], theme: Theme) {
       (skill) =>
         `<span class="chip chip--modern" style="border-color:${theme.border};background:${theme.accentMuted};">${escapeHtml(skill)}</span>`,
     )
-    .join("");
+    .join('');
 }
 
 function renderLanguages(resume: ResumeData) {
   return (resume.languages ?? [])
     .filter(Boolean)
     .map((language) => `<span class="language">${escapeHtml(language)}</span>`)
-    .join("");
+    .join('');
 }
 
 function renderEducation(resume: ResumeData) {
@@ -118,21 +118,21 @@ function renderEducation(resume: ResumeData) {
           <div class="education-title">${escapeHtml(education.school)}</div>
           <div class="education-meta">${escapeHtml(
             education.degree,
-          )}${education.field ? `, ${escapeHtml(education.field)}` : ""}</div>
+          )}${education.field ? `, ${escapeHtml(education.field)}` : ''}</div>
           <div class="education-meta">${escapeHtml(
             formatDateRange(education.startDate, education.endDate),
           )}</div>
         </div>
       `,
     )
-    .join("");
+    .join('');
 }
 
 function renderExperience(resume: ResumeData, theme: Theme) {
   return resume.experience
     .map(
       (experience, index) => `
-        <div class="experience-item${index < resume.experience.length - 1 ? " experience-item--spaced" : ""}">
+        <div class="experience-item${index < resume.experience.length - 1 ? ' experience-item--spaced' : ''}">
           <div class="role-row">
             <div class="role-heading">
               <div class="role-title">${escapeHtml(experience.position)}</div>
@@ -145,7 +145,7 @@ function renderExperience(resume: ResumeData, theme: Theme) {
                   experience.endDate,
                   experience.isCurrent,
                 ),
-              )}${experience.location ? `<br />${escapeHtml(experience.location)}` : ""}
+              )}${experience.location ? `<br />${escapeHtml(experience.location)}` : ''}
             </div>
           </div>
           <ul class="bullets">
@@ -159,22 +159,22 @@ function renderExperience(resume: ResumeData, theme: Theme) {
                   </li>
                 `,
               )
-              .join("")}
+              .join('')}
           </ul>
         </div>
       `,
     )
-    .join("");
+    .join('');
 }
 
 function renderProjects(
   resume: ResumeData,
   theme: Theme,
-  variant: "classic" | "modern",
+  variant: 'classic' | 'modern',
 ) {
   const projects = resume.projects ?? [];
   const chipClass =
-    variant === "modern" ? "tech-chip tech-chip--modern" : "tech-chip";
+    variant === 'modern' ? 'tech-chip tech-chip--modern' : 'tech-chip';
 
   return projects
     .map((project) => {
@@ -188,12 +188,12 @@ function renderProjects(
             <div class="role-heading">
               <div class="project-title">${escapeHtml(project.name)}</div>
             </div>
-            ${dateRange ? `<div class="role-meta">${escapeHtml(dateRange)}</div>` : ""}
+            ${dateRange ? `<div class="role-meta">${escapeHtml(dateRange)}</div>` : ''}
           </div>
           ${
             project.link
               ? `<div class="project-meta"><a class="project-link" href="${escapeHtml(toHref(project.link))}">${escapeHtml(project.link)}</a></div>`
-              : ""
+              : ''
           }
           <ul class="bullets">
             ${project.description
@@ -206,7 +206,7 @@ function renderProjects(
                   </li>
                 `,
               )
-              .join("")}
+              .join('')}
           </ul>
           ${
             project.technologies?.length
@@ -215,13 +215,13 @@ function renderProjects(
                     (tech) =>
                       `<span class="${chipClass}" style="border-color:${theme.border};background:${theme.accentMuted};">${escapeHtml(tech)}</span>`,
                   )
-                  .join("")}</div>`
-              : ""
+                  .join('')}</div>`
+              : ''
           }
         </div>
       `;
     })
-    .join("");
+    .join('');
 }
 
 function renderCertifications(resume: ResumeData) {
@@ -231,12 +231,12 @@ function renderCertifications(resume: ResumeData) {
         <div class="certification-item">
           <div class="certification-title">${escapeHtml(certification.name)}</div>
           <div class="certification-meta">${escapeHtml(certification.issuer)}${
-            certification.date ? ` · ${escapeHtml(certification.date)}` : ""
+            certification.date ? ` · ${escapeHtml(certification.date)}` : ''
           }</div>
         </div>
       `,
     )
-    .join("");
+    .join('');
 }
 
 function buildBaseStyles(theme: Theme) {
@@ -635,37 +635,51 @@ function renderClassicPage(resume: ResumeData, theme: Theme) {
           <div class="contact-list">${renderContacts(resume)}</div>
         </section>
 
-        ${resume.skills.length ? `
+        ${
+          resume.skills.length
+            ? `
           <section class="classic-section">
             <h2 class="section-title" style="font-size:${classic.sectionTitleFontSizePx}px;letter-spacing:${classic.sectionTitleLetterSpacingPx}px;">Skills</h2>
             <div>${renderSkillChips(resume.skills, theme)}</div>
           </section>
-        ` : ""}
+        `
+            : ''
+        }
 
-        ${resume.languages?.length ? `
+        ${
+          resume.languages?.length
+            ? `
           <section class="classic-section">
             <h2 class="section-title" style="font-size:${classic.sectionTitleFontSizePx}px;letter-spacing:${classic.sectionTitleLetterSpacingPx}px;">Languages</h2>
             <div>
               ${renderLanguages(resume)}
             </div>
           </section>
-        ` : ""}
+        `
+            : ''
+        }
 
         <section class="classic-section">
           <h2 class="section-title" style="font-size:${classic.sectionTitleFontSizePx}px;letter-spacing:${classic.sectionTitleLetterSpacingPx}px;">Education</h2>
           ${renderEducation(resume)}
         </section>
 
-        ${resume.certifications?.length ? `
+        ${
+          resume.certifications?.length
+            ? `
           <section class="classic-section">
             <h2 class="section-title" style="font-size:${classic.sectionTitleFontSizePx}px;letter-spacing:${classic.sectionTitleLetterSpacingPx}px;">Certifications</h2>
             ${renderCertifications(resume)}
           </section>
-        ` : ""}
+        `
+            : ''
+        }
       </aside>
 
       <main class="classic-content">
-        ${resume.summary ? `
+        ${
+          resume.summary
+            ? `
           <section class="classic-section classic-summary">
             <h2 class="section-title" style="font-size:${classic.sectionTitleFontSizePx}px;letter-spacing:${classic.sectionTitleLetterSpacingPx}px;">Profile</h2>
             <p style="font-size:${classic.paragraphFontSizePx}px;line-height:1.42;">${escapeHtml(
@@ -673,19 +687,25 @@ function renderClassicPage(resume: ResumeData, theme: Theme) {
             )}</p>
           </section>
           <div class="classic-divider"></div>
-        ` : ""}
+        `
+            : ''
+        }
 
         <section class="classic-section">
           <h2 class="section-title" style="font-size:${classic.sectionTitleFontSizePx}px;letter-spacing:${classic.sectionTitleLetterSpacingPx}px;">Experience</h2>
           ${renderExperience(resume, theme)}
         </section>
 
-        ${resume.projects?.length ? `
+        ${
+          resume.projects?.length
+            ? `
           <section class="classic-section">
             <h2 class="section-title" style="font-size:${classic.sectionTitleFontSizePx}px;letter-spacing:${classic.sectionTitleLetterSpacingPx}px;">Projects</h2>
-            ${renderProjects(resume, theme, "classic")}
+            ${renderProjects(resume, theme, 'classic')}
           </section>
-        ` : ""}
+        `
+            : ''
+        }
       </main>
     </div>
   `;
@@ -711,36 +731,48 @@ function renderModernPage(resume: ResumeData, theme: Theme) {
 
       <div class="page-inner modern-body" style="padding-top:${modern.bodyVerticalPaddingPx}px;padding-bottom:${modern.bodyVerticalPaddingPx}px;padding-left:${modern.bodyHorizontalPaddingPx}px;padding-right:${modern.bodyHorizontalPaddingPx}px;">
         <div class="modern-left-col">
-          ${resume.summary ? `
+          ${
+            resume.summary
+              ? `
             <section class="modern-summary">
               <h2 class="section-title">Profile</h2>
               <p>${escapeHtml(resume.summary)}</p>
             </section>
-          ` : ""}
+          `
+              : ''
+          }
 
           <section class="modern-section modern-card">
             <h2 class="section-title">Skills</h2>
             <div>${renderModernSkillChips(resume.skills, theme)}</div>
           </section>
 
-          ${resume.languages?.length ? `
+          ${
+            resume.languages?.length
+              ? `
             <section class="modern-section modern-card">
               <h2 class="section-title">Languages</h2>
               <div>${renderLanguages(resume)}</div>
             </section>
-          ` : ""}
+          `
+              : ''
+          }
 
           <section class="modern-section modern-card">
             <h2 class="section-title">Education</h2>
             ${renderEducation(resume)}
           </section>
 
-          ${resume.certifications?.length ? `
+          ${
+            resume.certifications?.length
+              ? `
             <section class="modern-section modern-card">
               <h2 class="section-title">Certifications</h2>
               ${renderCertifications(resume)}
             </section>
-          ` : ""}
+          `
+              : ''
+          }
         </div>
 
         <div class="modern-right-col">
@@ -749,12 +781,16 @@ function renderModernPage(resume: ResumeData, theme: Theme) {
             ${renderExperience(resume, theme)}
           </section>
 
-          ${resume.projects?.length ? `
+          ${
+            resume.projects?.length
+              ? `
             <section class="modern-section modern-card">
               <h2 class="section-title">Projects</h2>
-              ${renderProjects(resume, theme, "modern")}
+              ${renderProjects(resume, theme, 'modern')}
             </section>
-          ` : ""}
+          `
+              : ''
+          }
         </div>
       </div>
     </div>
@@ -768,7 +804,7 @@ export function renderResumeConstructorHtml({
 }: RenderResumeConstructorHtmlParams) {
   const theme = getTheme(colorScheme);
   const body =
-    template === "classic"
+    template === 'classic'
       ? renderClassicPage(resume, theme)
       : renderModernPage(resume, theme);
 

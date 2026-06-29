@@ -6,7 +6,7 @@ import { ArrowRight, Clock3, FileText, Plus, Sparkles } from "lucide-react";
 
 import { ROUTES } from "@/common/routes";
 import { useGetDocumentsPreview } from "@/hooks/document/useGetDocumentsPreview";
-import { useGetAiUsage } from "@/hooks/ai/useGetAiUsage";
+import { useGetUsage } from "@/hooks/usage/useGetUsage";
 import { PageBreadcrumbs } from "@/components/layout/page-breadcrumbs";
 import {
   Card,
@@ -58,7 +58,7 @@ function formatRelativeDate(value: string) {
 export default function Documents() {
   const router = useRouter();
   const { data: documents } = useGetDocumentsPreview();
-  const { data: aiUsage } = useGetAiUsage();
+  const { data: usage } = useGetUsage();
 
   const items = [...(documents ?? [])].sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
@@ -69,11 +69,23 @@ export default function Documents() {
   ).length;
   const coverLetterCount = totalDocuments - resumeCount;
   const latestDocument = items[0];
-  const requestUsageLabel = aiUsage
-    ? aiUsage.unlimited
+  const creationUsageLabel = usage
+    ? usage.create.unlimited
       ? "Unlimited"
-      : `${aiUsage.remaining}/${aiUsage.total}`
+      : `${usage.create.remaining}/${usage.create.total}`
     : "—";
+  const exportUsageLabel = usage
+    ? usage.export.unlimited
+      ? "Unlimited"
+      : `${usage.export.remaining}/${usage.export.total}`
+    : "—";
+  const tierLabel = usage
+    ? usage.tier === "free"
+      ? "Free"
+      : usage.tier === "pro"
+        ? "Pro"
+        : "Max"
+    : null;
 
   return (
     <div className="relative min-h-full overflow-hidden pb-14">
@@ -93,13 +105,25 @@ export default function Documents() {
               <CardHeader className="gap-3 border-b border-border/60 pb-5">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="max-w-2xl space-y-3">
-                    <Badge
-                      variant="secondary"
-                      className="rounded-full px-3 py-1"
-                    >
-                      <Sparkles className="mr-1.5 size-3.5" />
-                      Document library
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="secondary"
+                        className="rounded-full px-3 py-1"
+                      >
+                        <Sparkles className="mr-1.5 size-3.5" />
+                        Document library
+                      </Badge>
+                      {tierLabel && (
+                        <Link href={ROUTES.SETTINGS}>
+                          <Badge
+                            variant="outline"
+                            className="rounded-full px-3 py-1"
+                          >
+                            {tierLabel} plan
+                          </Badge>
+                        </Link>
+                      )}
+                    </div>
                     <CardTitle className="text-2xl sm:text-3xl">
                       Your documents, organized and ready to edit
                     </CardTitle>
@@ -121,7 +145,7 @@ export default function Documents() {
                 </div>
               </CardHeader>
 
-              <CardContent className="grid grid-cols-2 gap-3 pt-4 xl:grid-cols-4">
+              <CardContent className="grid grid-cols-2 gap-3 pt-4 xl:grid-cols-5">
                 <div className="rounded-2xl border border-border/60 bg-muted/40 p-4">
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Total
@@ -155,13 +179,26 @@ export default function Documents() {
                 </div>
                 <div className="rounded-2xl border border-border/60 bg-muted/40 p-4">
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                    AI requests
+                    Creations left
                   </p>
                   <p className="mt-2 text-2xl font-semibold">
-                    {requestUsageLabel}
+                    {creationUsageLabel}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {aiUsage?.unlimited
+                    {usage?.create.unlimited
+                      ? "Daily limit disabled in dev"
+                      : "Remaining today"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border/60 bg-muted/40 p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Exports left
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold">
+                    {exportUsageLabel}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {usage?.export.unlimited
                       ? "Daily limit disabled in dev"
                       : "Remaining today"}
                   </p>
@@ -214,7 +251,7 @@ export default function Documents() {
                       className="w-full justify-between"
                       onClick={() =>
                         router.push(
-                          `${ROUTES.DOCUMENTS}/${latestDocument.type.toLowerCase()}/${latestDocument.id}`,
+                          `${ROUTES.DOCUMENTS}/${latestDocument.type.toLowerCase().replaceAll("_", "-")}/${latestDocument.id}`,
                         )
                       }
                     >

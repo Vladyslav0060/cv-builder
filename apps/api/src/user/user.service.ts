@@ -92,7 +92,10 @@ export class UserService {
       select: { avatarData: true, avatarMimeType: true },
     });
     if (!user?.avatarData || !user?.avatarMimeType) return null;
-    return { data: Buffer.from(user.avatarData), mimeType: user.avatarMimeType };
+    return {
+      data: Buffer.from(user.avatarData),
+      mimeType: user.avatarMimeType,
+    };
   }
 
   async deleteAvatar(userId: string): Promise<User> {
