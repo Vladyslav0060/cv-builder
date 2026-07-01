@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   InternalServerErrorException,
   NotFoundException,
@@ -118,7 +119,16 @@ export class UserController {
   @Get('avatar/:userId')
   @ApiOperation({ summary: 'Serve avatar image' })
   @ApiParam({ name: 'userId', required: true })
-  async getAvatar(@Param('userId') userId: string, @Res() res: Response) {
+  @UseGuards(AuthenticatedGuard)
+  async getAvatar(
+    @CurrentUser() currentUser: SafeUser,
+    @Param('userId') userId: string,
+    @Res() res: Response,
+  ) {
+    if (currentUser.id !== userId) {
+      throw new ForbiddenException('Cannot access another user avatar');
+    }
+
     const avatar = await this.userService.getAvatarData(userId);
     if (!avatar) throw new NotFoundException('No avatar found');
     (res as any).set('Content-Type', avatar.mimeType);
@@ -169,7 +179,15 @@ export class UserController {
   @ApiOperation({ summary: 'Delete user' })
   @ApiResponse({ status: 200, description: 'User has been deleted' })
   @ApiParam({ name: 'id', example: '1', required: true })
-  async deleteUser(@Param('id') id: string) {
+  @UseGuards(AuthenticatedGuard)
+  async deleteUser(
+    @CurrentUser() currentUser: SafeUser,
+    @Param('id') id: string,
+  ) {
+    if (currentUser.id !== id) {
+      throw new ForbiddenException('Cannot delete another user');
+    }
+
     return this.userService.deleteUser(id);
   }
 
@@ -180,7 +198,15 @@ export class UserController {
     description: 'User has been found',
     type: EnrichedUserDto,
   })
-  async findUserById(@Param('id') id: string): Promise<EnrichedUserDto> {
+  @UseGuards(AuthenticatedGuard)
+  async findUserById(
+    @CurrentUser() currentUser: SafeUser,
+    @Param('id') id: string,
+  ): Promise<EnrichedUserDto> {
+    if (currentUser.id !== id) {
+      throw new ForbiddenException('Cannot access another user');
+    }
+
     const res = await this.userService.findEnrichedUser(id);
     return toEnrichedUserDto(res);
   }

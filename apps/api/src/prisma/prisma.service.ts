@@ -27,4 +27,15 @@ export class PrismaService extends PrismaClient {
       return callback(tx);
     });
   }
+
+  async forSystem<T>(
+    callback: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        SELECT set_config('app.bypass_rls', 'on', true)
+      `;
+      return callback(tx);
+    });
+  }
 }

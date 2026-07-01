@@ -23,10 +23,12 @@ export class TierGuard implements CanActivate {
 
     if (!requiredTier) return true;
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: { subscription: { select: { tier: true, status: true } } },
-    });
+    const user = await this.prisma.forUser(req.user.id, (tx) =>
+      tx.user.findUnique({
+        where: { id: req.user.id },
+        select: { subscription: { select: { tier: true, status: true } } },
+      }),
+    );
 
     if (!user) throw new UnauthorizedException('User not found');
     if (!user?.subscription?.tier || !user.subscription?.status) return false;

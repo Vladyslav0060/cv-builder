@@ -7,7 +7,8 @@ import { SubscriptionStatus, Tier } from 'generated/prisma/enums';
 describe('SubscriptionService', () => {
   let service: SubscriptionService;
   let prisma: {
-    $transaction: jest.Mock;
+    forSystem: jest.Mock;
+    forUser: jest.Mock;
     user: { update: jest.Mock };
     subscription: {
       upsert: jest.Mock;
@@ -29,7 +30,10 @@ describe('SubscriptionService', () => {
     process.env.STRIPE_MAX_6M_PRICE_ID = 'price_max_6m';
 
     prisma = {
-      $transaction: jest.fn((cb: (tx: typeof prisma) => unknown) => cb(prisma)),
+      forSystem: jest.fn((cb: (tx: typeof prisma) => unknown) => cb(prisma)),
+      forUser: jest.fn((_userId: string, cb: (tx: typeof prisma) => unknown) =>
+        cb(prisma),
+      ),
       user: { update: jest.fn() },
       subscription: {
         upsert: jest.fn(),
@@ -121,7 +125,7 @@ describe('SubscriptionService', () => {
       await service.handleWebhookEvent(event);
 
       expect(stripeSubscriptionsRetrieve).not.toHaveBeenCalled();
-      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.forSystem).not.toHaveBeenCalled();
     });
   });
 

@@ -21,6 +21,8 @@ describe('DocumentController', () => {
   const currentUser = { id: 'user_1' } as SafeUser;
 
   beforeEach(() => {
+    jest.clearAllMocks();
+
     documentService = {
       createDocument: jest.fn().mockResolvedValue({ id: 'doc_1' }),
       upsertResume: jest.fn().mockResolvedValue({}),

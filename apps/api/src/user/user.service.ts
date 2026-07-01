@@ -12,12 +12,14 @@ export class UserService {
   async createUser(data: CreateUserDto): Promise<User> {
     const { password, ...user } = data;
     const passwordHash = await argon2.hash(password);
-    return this.prisma.user.create({
-      data: {
-        ...user,
-        credential: { create: { passwordHash } },
-      },
-    });
+    return this.prisma.forSystem((tx) =>
+      tx.user.create({
+        data: {
+          ...user,
+          credential: { create: { passwordHash } },
+        },
+      }),
+    );
   }
 
   async getUsers(params: {
@@ -28,44 +30,63 @@ export class UserService {
     orderBy?: Prisma.UserOrderByWithRelationInput;
   }): Promise<User[]> {
     const { skip, take, cursor, where, orderBy } = params;
-    return this.prisma.user.findMany({
-      skip,
-      take,
-      cursor,
-      where,
-      orderBy,
-    });
+    return this.prisma.forSystem((tx) =>
+      tx.user.findMany({
+        skip,
+        take,
+        cursor,
+        where,
+        orderBy,
+      }),
+    );
   }
 
   async findEnrichedUser(userId: string): Promise<EnrichedUser> {
-    return this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: enrichedUserSelect,
-    });
+    return this.prisma.forUser(userId, (tx) =>
+      tx.user.findUniqueOrThrow({
+        where: { id: userId },
+        select: enrichedUserSelect,
+      }),
+    );
   }
 
   async findUser(
     userWhereUniqueInput: Prisma.UserWhereUniqueInput,
   ): Promise<User | null> {
-    return this.prisma.user.findUniqueOrThrow({
-      where: userWhereUniqueInput,
-    });
+    const userId = userWhereUniqueInput.id;
+    if (typeof userId === 'string') {
+      return this.prisma.forUser(userId, (tx) =>
+        tx.user.findUniqueOrThrow({
+          where: userWhereUniqueInput,
+        }),
+      );
+    }
+
+    return this.prisma.forSystem((tx) =>
+      tx.user.findUniqueOrThrow({
+        where: userWhereUniqueInput,
+      }),
+    );
   }
 
   async findUserWithCredentials(
     userWhereUniqueInput: Prisma.UserWhereUniqueInput,
   ): Promise<(User & { credential: Credential | null }) | null> {
-    return this.prisma.user.findUniqueOrThrow({
-      where: userWhereUniqueInput,
-      include: { credential: true },
-    });
+    return this.prisma.forSystem((tx) =>
+      tx.user.findUniqueOrThrow({
+        where: userWhereUniqueInput,
+        include: { credential: true },
+      }),
+    );
   }
 
   async updateUser(id: string, data: Prisma.UserUpdateInput): Promise<User> {
-    return this.prisma.user.update({
-      data,
-      where: { id },
-    });
+    return this.prisma.forUser(id, (tx) =>
+      tx.user.update({
+        data,
+        where: { id },
+      }),
+    );
   }
 
   async updateAvatar(
@@ -74,23 +95,27 @@ export class UserService {
     mimeType: string,
     avatarUrl: string,
   ): Promise<User> {
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        avatarData: buffer as unknown as Uint8Array<ArrayBuffer>,
-        avatarMimeType: mimeType,
-        avatarUrl,
-      },
-    });
+    return this.prisma.forUser(userId, (tx) =>
+      tx.user.update({
+        where: { id: userId },
+        data: {
+          avatarData: buffer as unknown as Uint8Array<ArrayBuffer>,
+          avatarMimeType: mimeType,
+          avatarUrl,
+        },
+      }),
+    );
   }
 
   async getAvatarData(
     userId: string,
   ): Promise<{ data: Buffer; mimeType: string } | null> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { avatarData: true, avatarMimeType: true },
-    });
+    const user = await this.prisma.forUser(userId, (tx) =>
+      tx.user.findUnique({
+        where: { id: userId },
+        select: { avatarData: true, avatarMimeType: true },
+      }),
+    );
     if (!user?.avatarData || !user?.avatarMimeType) return null;
     return {
       data: Buffer.from(user.avatarData),
@@ -99,17 +124,21 @@ export class UserService {
   }
 
   async deleteAvatar(userId: string): Promise<User> {
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: { avatarData: null, avatarMimeType: null, avatarUrl: null },
-    });
+    return this.prisma.forUser(userId, (tx) =>
+      tx.user.update({
+        where: { id: userId },
+        data: { avatarData: null, avatarMimeType: null, avatarUrl: null },
+      }),
+    );
   }
 
   async deleteUser(id: string): Promise<User> {
-    return this.prisma.user.delete({
-      where: {
-        id,
-      },
-    });
+    return this.prisma.forUser(id, (tx) =>
+      tx.user.delete({
+        where: {
+          id,
+        },
+      }),
+    );
   }
 }

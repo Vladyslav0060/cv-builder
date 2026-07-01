@@ -105,15 +105,17 @@ export class SubscriptionService implements OnModuleInit {
   async getCurrentSubscription(
     userId: string,
   ): Promise<CurrentSubscriptionDto> {
-    const subscription = await this.prisma.subscription.findUnique({
-      where: { userId },
-      select: {
-        tier: true,
-        status: true,
-        currentPeriodEnd: true,
-        cancelAtPeriodEnd: true,
-      },
-    });
+    const subscription = await this.prisma.forUser(userId, (tx) =>
+      tx.subscription.findUnique({
+        where: { userId },
+        select: {
+          tier: true,
+          status: true,
+          currentPeriodEnd: true,
+          cancelAtPeriodEnd: true,
+        },
+      }),
+    );
 
     const tier = await this.usageQuotaService.resolveTier(userId);
 
@@ -127,10 +129,12 @@ export class SubscriptionService implements OnModuleInit {
   }
 
   async cancelSubscription(userId: string): Promise<void> {
-    const subscription = await this.prisma.subscription.findUnique({
-      where: { userId },
-      select: { stripeSubscriptionId: true, status: true },
-    });
+    const subscription = await this.prisma.forUser(userId, (tx) =>
+      tx.subscription.findUnique({
+        where: { userId },
+        select: { stripeSubscriptionId: true, status: true },
+      }),
+    );
 
     if (!subscription) {
       throw new NotFoundException('No active subscription found');
@@ -143,10 +147,12 @@ export class SubscriptionService implements OnModuleInit {
       cancel_at_period_end: true,
     });
 
-    await this.prisma.subscription.update({
-      where: { userId },
-      data: { cancelAtPeriodEnd: true },
-    });
+    await this.prisma.forUser(userId, (tx) =>
+      tx.subscription.update({
+        where: { userId },
+        data: { cancelAtPeriodEnd: true },
+      }),
+    );
   }
 
   constructEvent(rawBody: string | Buffer, signature: string): Event {
@@ -176,7 +182,7 @@ export class SubscriptionService implements OnModuleInit {
 
         const tier = getTierByPriceId(priceId);
 
-        await this.prisma.$transaction(async (tx) => {
+        await this.prisma.forSystem(async (tx) => {
           await tx.user.update({
             data: { stripeCustomerId: stripeCustomerId as string },
             where: { id: client_reference_id },
@@ -204,26 +210,30 @@ export class SubscriptionService implements OnModuleInit {
         const stripeSubscription = event.data.object;
         const { current_period_end } =
           extractSubscriptionFields(stripeSubscription);
-        await this.prisma.subscription.update({
-          data: {
-            status: stripeSubscription.status,
-            currentPeriodEnd: new Date(current_period_end * 1000),
-            cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-          },
-          where: {
-            stripeSubscriptionId: stripeSubscription.id,
-          },
-        });
+        await this.prisma.forSystem((tx) =>
+          tx.subscription.update({
+            data: {
+              status: stripeSubscription.status,
+              currentPeriodEnd: new Date(current_period_end * 1000),
+              cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+            },
+            where: {
+              stripeSubscriptionId: stripeSubscription.id,
+            },
+          }),
+        );
         break;
       }
       case 'customer.subscription.deleted': {
         const stripeSubscription = event.data.object;
-        await this.prisma.subscription.update({
-          data: { status: SubscriptionStatus.canceled },
-          where: {
-            stripeSubscriptionId: stripeSubscription.id,
-          },
-        });
+        await this.prisma.forSystem((tx) =>
+          tx.subscription.update({
+            data: { status: SubscriptionStatus.canceled },
+            where: {
+              stripeSubscriptionId: stripeSubscription.id,
+            },
+          }),
+        );
         break;
       }
     }

@@ -35,18 +35,20 @@ export class AuthService {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-    const user = await this.prisma.user.create({
-      data: {
-        ...userFields,
-        credential: {
-          create: {
-            passwordHash,
-            verifyCode: code,
-            verifyCodeExpiresAt: expiresAt,
+    const user = await this.prisma.forSystem((tx) =>
+      tx.user.create({
+        data: {
+          ...userFields,
+          credential: {
+            create: {
+              passwordHash,
+              verifyCode: code,
+              verifyCodeExpiresAt: expiresAt,
+            },
           },
         },
-      },
-    });
+      }),
+    );
 
     this.mailService
       .sendVerificationEmail(user.email, code)
@@ -98,61 +100,65 @@ export class AuthService {
   }
 
   async verifyEmail(userId: string, code: string): Promise<{ ok: boolean }> {
-    const credential = await this.prisma.credential.findUnique({
-      where: { userId },
-    });
+    return this.prisma.forUser(userId, async (tx) => {
+      const credential = await tx.credential.findUnique({
+        where: { userId },
+      });
 
-    if (!credential) {
-      throw new BadRequestException('No pending verification found');
-    }
-    if (credential.emailVerified) {
+      if (!credential) {
+        throw new BadRequestException('No pending verification found');
+      }
+      if (credential.emailVerified) {
+        return { ok: true };
+      }
+      if (!credential.verifyCode || credential.verifyCode !== code) {
+        throw new BadRequestException('Invalid verification code');
+      }
+      if (
+        !credential.verifyCodeExpiresAt ||
+        credential.verifyCodeExpiresAt < new Date()
+      ) {
+        throw new BadRequestException('Verification code has expired');
+      }
+
+      await tx.credential.update({
+        where: { id: credential.id },
+        data: {
+          emailVerified: true,
+          verifyCode: null,
+          verifyCodeExpiresAt: null,
+        },
+      });
+
       return { ok: true };
-    }
-    if (!credential.verifyCode || credential.verifyCode !== code) {
-      throw new BadRequestException('Invalid verification code');
-    }
-    if (
-      !credential.verifyCodeExpiresAt ||
-      credential.verifyCodeExpiresAt < new Date()
-    ) {
-      throw new BadRequestException('Verification code has expired');
-    }
-
-    await this.prisma.credential.update({
-      where: { id: credential.id },
-      data: {
-        emailVerified: true,
-        verifyCode: null,
-        verifyCodeExpiresAt: null,
-      },
     });
-
-    return { ok: true };
   }
 
   async forgotPassword(email: string): Promise<{ ok: boolean }> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (user) {
-      const credential = await this.prisma.credential.findUnique({
-        where: { userId: user.id },
-      });
-
-      if (credential) {
-        const token = crypto.randomBytes(32).toString('hex');
-        const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-
-        await this.prisma.credential.update({
-          where: { id: credential.id },
-          data: { resetToken: token, resetTokenExpiresAt: expiresAt },
+    await this.prisma.forSystem(async (tx) => {
+      const user = await tx.user.findUnique({ where: { email } });
+      if (user) {
+        const credential = await tx.credential.findUnique({
+          where: { userId: user.id },
         });
 
-        this.mailService
-          .sendPasswordResetEmail(email, token)
-          .catch((err) =>
-            this.logger.error('Failed to send password reset email', err),
-          );
+        if (credential) {
+          const token = crypto.randomBytes(32).toString('hex');
+          const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+          await tx.credential.update({
+            where: { id: credential.id },
+            data: { resetToken: token, resetTokenExpiresAt: expiresAt },
+          });
+
+          this.mailService
+            .sendPasswordResetEmail(email, token)
+            .catch((err) =>
+              this.logger.error('Failed to send password reset email', err),
+            );
+        }
       }
-    }
+    });
 
     return { ok: true };
   }
@@ -161,60 +167,68 @@ export class AuthService {
     token: string,
     newPassword: string,
   ): Promise<{ ok: boolean }> {
-    const credential = await this.prisma.credential.findUnique({
-      where: { resetToken: token },
+    return this.prisma.forSystem(async (tx) => {
+      const credential = await tx.credential.findUnique({
+        where: { resetToken: token },
+      });
+
+      if (!credential) {
+        throw new BadRequestException('Invalid reset token');
+      }
+      if (
+        !credential.resetTokenExpiresAt ||
+        credential.resetTokenExpiresAt < new Date()
+      ) {
+        throw new BadRequestException('Reset token has expired');
+      }
+
+      const passwordHash = await argon.hash(newPassword);
+
+      await tx.credential.update({
+        where: { id: credential.id },
+        data: {
+          passwordHash,
+          resetToken: null,
+          resetTokenExpiresAt: null,
+        },
+      });
+
+      return { ok: true };
     });
-
-    if (!credential) {
-      throw new BadRequestException('Invalid reset token');
-    }
-    if (
-      !credential.resetTokenExpiresAt ||
-      credential.resetTokenExpiresAt < new Date()
-    ) {
-      throw new BadRequestException('Reset token has expired');
-    }
-
-    const passwordHash = await argon.hash(newPassword);
-
-    await this.prisma.credential.update({
-      where: { id: credential.id },
-      data: {
-        passwordHash,
-        resetToken: null,
-        resetTokenExpiresAt: null,
-      },
-    });
-
-    return { ok: true };
   }
 
   async resendVerification(userId: string): Promise<{ ok: boolean }> {
-    const credential = await this.prisma.credential.findUnique({
-      where: { userId },
+    const result = await this.prisma.forUser(userId, async (tx) => {
+      const credential = await tx.credential.findUnique({
+        where: { userId },
+      });
+
+      if (!credential || credential.emailVerified) {
+        return { email: null, code: null };
+      }
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+      await tx.credential.update({
+        where: { id: credential.id },
+        data: { verifyCode: code, verifyCodeExpiresAt: expiresAt },
+      });
+
+      const user = await tx.user.findUniqueOrThrow({
+        where: { id: userId },
+      });
+
+      return { email: user.email, code };
     });
 
-    if (!credential || credential.emailVerified) {
-      return { ok: true };
+    if (result.email && result.code) {
+      this.mailService
+        .sendVerificationEmail(result.email, result.code)
+        .catch((err) =>
+          this.logger.error('Failed to resend verification email', err),
+        );
     }
-
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-
-    await this.prisma.credential.update({
-      where: { id: credential.id },
-      data: { verifyCode: code, verifyCodeExpiresAt: expiresAt },
-    });
-
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-    });
-
-    this.mailService
-      .sendVerificationEmail(user.email, code)
-      .catch((err) =>
-        this.logger.error('Failed to resend verification email', err),
-      );
 
     return { ok: true };
   }
@@ -253,10 +267,12 @@ export class AuthService {
   }
 
   async getUserForSession(userId: string): Promise<SafeUser | null> {
-    return this.prisma.user.findUnique({
-      where: { id: userId },
-      select: safeUserSelect,
-    });
+    return this.prisma.forUser(userId, (tx) =>
+      tx.user.findUnique({
+        where: { id: userId },
+        select: safeUserSelect,
+      }),
+    );
   }
 
   async loginWithGoogle(profile: {
@@ -277,7 +293,7 @@ export class AuthService {
     const lastName = profile.name?.familyName?.trim() || null;
     const avatarUrl = profile.photos?.[0]?.value?.trim() || null;
 
-    return this.prisma.$transaction(async (tx) => {
+    return this.prisma.forSystem(async (tx) => {
       const existingOAuth = await tx.oAuthAccount.findUnique({
         where: {
           provider_providerAccountId: {
