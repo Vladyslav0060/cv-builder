@@ -15,25 +15,29 @@ export class DocumentService {
     userId: string,
     documentId: string,
   ): Promise<GetDocumentDto> {
-    return this.prisma.document.findUniqueOrThrow({
-      where: { id: documentId, AND: { userId } },
-      select: documentSelect,
-    });
+    return this.prisma.forUser(userId, (tx) =>
+      tx.document.findUniqueOrThrow({
+        where: { id: documentId, AND: { userId } },
+        select: documentSelect,
+      }),
+    );
   }
 
   async getUserDocumentsPreview(
     userId: string,
   ): Promise<GetDocumentsPreviewDto[]> {
-    return this.prisma.document.findMany({
-      where: { userId },
-      select: {
-        title: true,
-        type: true,
-        id: true,
-        updatedAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    return this.prisma.forUser(userId, (tx) =>
+      tx.document.findMany({
+        where: { userId },
+        select: {
+          title: true,
+          type: true,
+          id: true,
+          updatedAt: true,
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+    );
   }
 
   async createDocument(
@@ -43,14 +47,16 @@ export class DocumentService {
   ) {
     try {
       const { type, jobTitle } = createDocumentDto;
-      return this.prisma.document.create({
-        data: {
-          userId,
-          content,
-          title: jobTitle,
-          type,
-        },
-      });
+      return this.prisma.forUser(userId, (tx) =>
+        tx.document.create({
+          data: {
+            userId,
+            content,
+            title: jobTitle,
+            type,
+          },
+        }),
+      );
     } catch (error) {}
   }
 
@@ -59,20 +65,24 @@ export class DocumentService {
     documentId: string,
     content: string,
   ): Promise<GetDocumentDto> {
-    return this.prisma.document.update({
-      where: { id: documentId, AND: { userId } },
-      data: { content },
-      select: documentSelect,
-    });
+    return this.prisma.forUser(userId, (tx) =>
+      tx.document.update({
+        where: { id: documentId, AND: { userId } },
+        data: { content },
+        select: documentSelect,
+      }),
+    );
   }
 
   async getResumeByDocumentId(userId: string, documentId: string) {
-    await this.prisma.document.findUniqueOrThrow({
-      where: { id: documentId, AND: { userId } },
-      select: { id: true },
-    });
+    return this.prisma.forUser(userId, async (tx) => {
+      await tx.document.findUniqueOrThrow({
+        where: { id: documentId, AND: { userId } },
+        select: { id: true },
+      });
 
-    return this.prisma.resume.findUnique({ where: { documentId } });
+      return tx.resume.findUnique({ where: { documentId } });
+    });
   }
 
   async upsertResume(
@@ -80,11 +90,6 @@ export class DocumentService {
     documentId: string,
     payload: ResumeExportPayload,
   ) {
-    await this.prisma.document.findUniqueOrThrow({
-      where: { id: documentId, AND: { userId } },
-      select: { id: true },
-    });
-
     const { resume, template, colorScheme } = payload;
     const data = {
       fullName: resume.personalInfo.fullName,
@@ -107,10 +112,17 @@ export class DocumentService {
       colorScheme,
     };
 
-    return this.prisma.resume.upsert({
-      where: { documentId },
-      create: { documentId, ...data },
-      update: data,
+    return this.prisma.forUser(userId, async (tx) => {
+      await tx.document.findUniqueOrThrow({
+        where: { id: documentId, AND: { userId } },
+        select: { id: true },
+      });
+
+      return tx.resume.upsert({
+        where: { documentId },
+        create: { documentId, ...data },
+        update: data,
+      });
     });
   }
 }

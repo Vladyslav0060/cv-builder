@@ -27,24 +27,26 @@ export class UsageQuotaService {
     const limit = TIER_DAILY_LIMITS[tier][actionType];
     const day = this.getUtcDayStart();
 
-    const rows = await this.prisma.$queryRaw<{ count: number }[]>`
-      INSERT INTO "usage_records" ("id", "user_id", "day", "action_type", "count", "created_at", "updated_at")
-      VALUES (
-        md5(random()::text || clock_timestamp()::text),
-        ${userId},
-        ${day},
-        ${actionType}::"UsageActionType",
-        1,
-        NOW(),
-        NOW()
-      )
-      ON CONFLICT ("user_id", "day", "action_type")
-      DO UPDATE SET
-        "count" = "usage_records"."count" + 1,
-        "updated_at" = NOW()
-      WHERE "usage_records"."count" < ${limit}
-      RETURNING "count";
-    `;
+    const rows = await this.prisma.forUser(userId, (tx) =>
+      tx.$queryRaw<{ count: number }[]>`
+        INSERT INTO "usage_records" ("id", "user_id", "day", "action_type", "count", "created_at", "updated_at")
+        VALUES (
+          md5(random()::text || clock_timestamp()::text),
+          ${userId},
+          ${day},
+          ${actionType}::"UsageActionType",
+          1,
+          NOW(),
+          NOW()
+        )
+        ON CONFLICT ("user_id", "day", "action_type")
+        DO UPDATE SET
+          "count" = "usage_records"."count" + 1,
+          "updated_at" = NOW()
+        WHERE "usage_records"."count" < ${limit}
+        RETURNING "count";
+      `,
+    );
 
     if (rows.length === 0) {
       throw new HttpException(
@@ -77,15 +79,15 @@ export class UsageQuotaService {
     }
 
     const day = this.getUtcDayStart();
-    const rows = await this.prisma.$queryRaw<
-      { action_type: UsageActionType; count: number }[]
-    >`
-      SELECT "action_type", COALESCE(SUM("count"), 0)::int AS "count"
-      FROM "usage_records"
-      WHERE "user_id" = ${userId}
-        AND "day" = ${day}
-      GROUP BY "action_type"
-    `;
+    const rows = await this.prisma.forUser(userId, (tx) =>
+      tx.$queryRaw<{ action_type: UsageActionType; count: number }[]>`
+        SELECT "action_type", COALESCE(SUM("count"), 0)::int AS "count"
+        FROM "usage_records"
+        WHERE "user_id" = ${userId}
+          AND "day" = ${day}
+        GROUP BY "action_type"
+      `,
+    );
 
     const usedByAction: Record<UsageActionType, number> = {
       CREATE: 0,
@@ -113,10 +115,12 @@ export class UsageQuotaService {
   }
 
   async resolveTier(userId: string): Promise<ResolvedTier> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { subscription: { select: { tier: true, status: true } } },
-    });
+    const user = await this.prisma.forUser(userId, (tx) =>
+      tx.user.findUnique({
+        where: { id: userId },
+        select: { subscription: { select: { tier: true, status: true } } },
+      }),
+    );
 
     const subscription = user?.subscription;
     if (

@@ -22,10 +22,12 @@ export class SessionSerializer extends PassportSerializer {
     done: (err: Error | null, user?: any) => void,
   ): Promise<void> {
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { id },
-        select: safeUserSelect,
-      });
+      const user = await this.prisma.forUser(id, (tx) =>
+        tx.user.findUnique({
+          where: { id },
+          select: safeUserSelect,
+        }),
+      );
       done(null, user ?? false);
     } catch (err) {
       done(err as Error);

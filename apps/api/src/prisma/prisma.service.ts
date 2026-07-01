@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaClient } from 'generated/prisma/client';
+import { Prisma, PrismaClient } from 'generated/prisma/client';
 
 @Injectable()
 export class PrismaService extends PrismaClient {
@@ -13,5 +13,29 @@ export class PrismaService extends PrismaClient {
       .connect()
       .then((res) => console.log('connected'))
       .catch((err) => console.log(err));
+  }
+
+  // RLS
+  async forUser<T>(
+    userId: string,
+    callback: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        SELECT set_config('app.current_user_id', ${userId}, true)
+      `;
+      return callback(tx);
+    });
+  }
+
+  async forSystem<T>(
+    callback: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    return this.$transaction(async (tx) => {
+      await tx.$executeRaw`
+        SELECT set_config('app.bypass_rls', 'on', true)
+      `;
+      return callback(tx);
+    });
   }
 }

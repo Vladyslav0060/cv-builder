@@ -4,12 +4,19 @@ import { ConfigService } from '@nestjs/config';
 
 describe('UsageQuotaService', () => {
   let service: UsageQuotaService;
-  let prisma: { $queryRaw: jest.Mock; user: { findUnique: jest.Mock } };
+  let prisma: {
+    $queryRaw: jest.Mock;
+    forUser: jest.Mock;
+    user: { findUnique: jest.Mock };
+  };
   let cfg: { get: jest.Mock };
 
   beforeEach(() => {
     prisma = {
       $queryRaw: jest.fn(),
+      forUser: jest.fn(
+        (_userId: string, cb: (tx: typeof prisma) => unknown) => cb(prisma),
+      ),
       user: { findUnique: jest.fn() },
     };
     cfg = { get: jest.fn().mockReturnValue('production') };
@@ -61,8 +68,7 @@ describe('UsageQuotaService', () => {
         service.consumeQuota('user_1', 'CREATE'),
       ).resolves.toBeUndefined();
 
-      const sql = prisma.$queryRaw.mock.calls[0][0] as { values: unknown[] };
-      expect(sql.values).toContain(1); // limit interpolated for free CREATE
+      expect(prisma.$queryRaw.mock.calls[0]).toContain(1); // limit interpolated for free CREATE
     });
 
     it('throws 429 when the free user is over quota', async () => {
@@ -82,8 +88,7 @@ describe('UsageQuotaService', () => {
 
       await service.consumeQuota('user_1', 'EXPORT');
 
-      const sql = prisma.$queryRaw.mock.calls[0][0] as { values: unknown[] };
-      expect(sql.values).toContain(10);
+      expect(prisma.$queryRaw.mock.calls[0]).toContain(10);
     });
 
     it('uses the max limit (50) for an active max user', async () => {
@@ -94,8 +99,7 @@ describe('UsageQuotaService', () => {
 
       await service.consumeQuota('user_1', 'CREATE');
 
-      const sql = prisma.$queryRaw.mock.calls[0][0] as { values: unknown[] };
-      expect(sql.values).toContain(50);
+      expect(prisma.$queryRaw.mock.calls[0]).toContain(50);
     });
 
     it('bypasses the database entirely in development mode', async () => {
