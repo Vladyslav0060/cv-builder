@@ -8,21 +8,21 @@ export const TIER_RANK: Record<Tier, number> = {
 
 export const ACTIVE_STATUSES: SubscriptionStatus[] = ['active', 'trialing'];
 
-export function getTierByPriceId(priceId: string): Tier {
-  if (
-    [
-      process.env.STRIPE_PRO_MONTHLY_PRICE_ID,
-      process.env.STRIPE_PRO_6M_PRICE_ID,
-    ].includes(priceId)
-  ) {
+export type StripePriceConfig = {
+  proMonthly: string;
+  proSixMonth: string;
+  maxMonthly: string;
+  maxSixMonth: string;
+};
+
+export function getTierByPriceId(
+  priceId: string,
+  prices: StripePriceConfig,
+): Tier {
+  if ([prices.proMonthly, prices.proSixMonth].includes(priceId)) {
     return Tier.pro;
   }
-  if (
-    [
-      process.env.STRIPE_MAX_MONTHLY_PRICE_ID,
-      process.env.STRIPE_MAX_6M_PRICE_ID,
-    ].includes(priceId)
-  ) {
+  if ([prices.maxMonthly, prices.maxSixMonth].includes(priceId)) {
     return Tier.max;
   }
   throw new Error(`Unknown priceId: ${priceId}`);

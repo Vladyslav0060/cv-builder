@@ -1,10 +1,11 @@
 import Stripe, { Event } from 'stripe';
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
-  OnModuleInit,
 } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 import { SubscriptionStatus, Tier } from 'generated/prisma/enums';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { extractSubscriptionFields, getTierByPriceId } from './utils';
@@ -12,34 +13,24 @@ import { TIER_DAILY_LIMITS } from 'src/usage/usage-limits';
 import { UsageQuotaService } from 'src/usage/usage-quota.service';
 import { PlanDto } from './dto/get-plans.dto';
 import { CurrentSubscriptionDto } from './dto/current-subscription.dto';
+import { stripeConfig, webConfig } from 'src/config';
 
 @Injectable()
-export class SubscriptionService implements OnModuleInit {
+export class SubscriptionService {
+  private readonly stripe: Stripe;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly usageQuotaService: UsageQuotaService,
-  ) {}
-
-  onModuleInit() {
-    const required = [
-      'STRIPE_SECRET_KEY',
-      'STRIPE_WEBHOOK_SECRET',
-      'STRIPE_PRO_MONTHLY_PRICE_ID',
-      'STRIPE_PRO_6M_PRICE_ID',
-      'STRIPE_MAX_MONTHLY_PRICE_ID',
-      'STRIPE_MAX_6M_PRICE_ID',
-    ];
-    const missing = required.filter((key) => !process.env[key]);
-    if (missing.length) {
-      throw new Error(`Missing env vars: ${missing.join(', ')}`);
-    }
+    @Inject(stripeConfig.KEY)
+    private readonly stripeCfg: ConfigType<typeof stripeConfig>,
+    @Inject(webConfig.KEY)
+    private readonly web: ConfigType<typeof webConfig>,
+  ) {
+    this.stripe = new Stripe(this.stripeCfg.secretKey, {
+      apiVersion: this.stripeCfg.apiVersion,
+    });
   }
-  private readonly stripe = new Stripe(
-    process.env.STRIPE_SECRET_KEY as string,
-    {
-      apiVersion: '2026-05-27.dahlia',
-    },
-  );
 
   async createCheckoutSession(
     userId: string,
@@ -47,8 +38,8 @@ export class SubscriptionService implements OnModuleInit {
   ): Promise<Stripe.Checkout.Session> {
     const session = await this.stripe.checkout.sessions.create({
       client_reference_id: userId,
-      success_url: `${process.env.WEB_BASE_URL}/checkout/success`,
-      cancel_url: `${process.env.WEB_BASE_URL}/checkout/cancel`,
+      success_url: `${this.web.baseUrl}/checkout/success`,
+      cancel_url: `${this.web.baseUrl}/checkout/cancel`,
       line_items: [
         {
           price: priceId,
@@ -64,10 +55,10 @@ export class SubscriptionService implements OnModuleInit {
     const [proMonthly, proSixMonth, maxMonthly, maxSixMonth] =
       await Promise.all(
         [
-          process.env.STRIPE_PRO_MONTHLY_PRICE_ID,
-          process.env.STRIPE_PRO_6M_PRICE_ID,
-          process.env.STRIPE_MAX_MONTHLY_PRICE_ID,
-          process.env.STRIPE_MAX_6M_PRICE_ID,
+          this.stripeCfg.prices.proMonthly,
+          this.stripeCfg.prices.proSixMonth,
+          this.stripeCfg.prices.maxMonthly,
+          this.stripeCfg.prices.maxSixMonth,
         ].map((priceId) => this.stripe.prices.retrieve(priceId as string)),
       );
 
@@ -159,7 +150,7 @@ export class SubscriptionService implements OnModuleInit {
     return this.stripe.webhooks.constructEvent(
       rawBody,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET as string,
+      this.stripeCfg.webhookSecret,
     );
   }
 
@@ -180,7 +171,7 @@ export class SubscriptionService implements OnModuleInit {
         const { current_period_end, priceId } =
           extractSubscriptionFields(stripeSubscription);
 
-        const tier = getTierByPriceId(priceId);
+        const tier = getTierByPriceId(priceId, this.stripeCfg.prices);
 
         await this.prisma.forSystem(async (tx) => {
           await tx.user.update({

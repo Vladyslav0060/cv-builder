@@ -1,26 +1,33 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { mailConfig, webConfig } from 'src/config';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
   private readonly transporter: nodemailer.Transporter;
 
-  constructor() {
+  constructor(
+    @Inject(mailConfig.KEY)
+    private readonly mail: ConfigType<typeof mailConfig>,
+    @Inject(webConfig.KEY)
+    private readonly web: ConfigType<typeof webConfig>,
+  ) {
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT ?? 587),
-      secure: process.env.SMTP_SECURE === 'true',
+      host: this.mail.host,
+      port: this.mail.port,
+      secure: this.mail.secure,
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: this.mail.user,
+        pass: this.mail.pass,
       },
     });
   }
 
   async sendVerificationEmail(to: string, code: string): Promise<void> {
     await this.transporter.sendMail({
-      from: process.env.SMTP_FROM,
+      from: this.mail.from,
       to,
       subject: 'Verify your email – CV Builder',
       html: `
@@ -34,9 +41,9 @@ export class MailService {
   }
 
   async sendPasswordResetEmail(to: string, token: string): Promise<void> {
-    const url = `${process.env.WEB_BASE_URL}/reset-password?token=${token}`;
+    const url = `${this.web.baseUrl}/reset-password?token=${token}`;
     await this.transporter.sendMail({
-      from: process.env.SMTP_FROM,
+      from: this.mail.from,
       to,
       subject: 'Reset your password – CV Builder',
       html: `
