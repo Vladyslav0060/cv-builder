@@ -25,6 +25,7 @@ import { GoogleAuthGuard } from './guards/google-auth.guard';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { TransferSessionDto } from './dto/transfer-session.dto';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { SafeUser } from 'src/user/user.select';
 
@@ -149,9 +150,9 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async transferSession(
     @Req() req: any,
-    @Body('token') token: string,
+    @Body() dto: TransferSessionDto,
   ): Promise<MeDto> {
-    const userId = this.authService.verifyTransferToken(token);
+    const userId = this.authService.verifyTransferToken(dto.token);
     if (!userId) throw new UnauthorizedException('Invalid or expired token');
     const user = await this.authService.getUserForSession(userId);
     if (!user) throw new UnauthorizedException('User not found');

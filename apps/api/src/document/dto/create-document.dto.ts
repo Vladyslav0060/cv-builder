@@ -1,67 +1,88 @@
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
 import { DocumentType } from 'generated/prisma/enums';
 
 export class DocumentApplicantInfoDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   firstName?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   lastName?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
+  @IsEmail()
+  @MaxLength(320)
   email?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(50)
   phone?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
+  @IsUrl()
+  @MaxLength(2048)
   avatarUrl?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   address?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   city?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   state?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(20)
   zip?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   country?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
+  @IsUrl()
+  @MaxLength(2048)
   linkedIn?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
+  @IsUrl()
+  @MaxLength(2048)
   portfolio?: string;
 
   @ApiPropertyOptional()
@@ -108,14 +129,20 @@ export enum CreateDocumentDtoCreationMode {
 export class CreateDocumentDto {
   @ApiProperty({ required: true })
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
   jobTitle: string;
 
   @ApiProperty({ required: true })
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(200)
   company: string;
 
   @ApiProperty({ required: true })
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(12000)
   description: string;
 
   @ApiProperty({

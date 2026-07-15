@@ -6,10 +6,13 @@ import {
   ForbiddenException,
   Get,
   InternalServerErrorException,
+  MaxFileSizeValidator,
   NotFoundException,
   Param,
+  ParseFilePipe,
   Patch,
   Post,
+  FileTypeValidator,
   Req,
   Res,
   UploadedFile,
@@ -88,7 +91,14 @@ export class UserController {
   )
   async uploadAvatar(
     @CurrentUser() currentUser: SafeUser,
-    @UploadedFile()
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: /^image\// }),
+        ],
+      }),
+    )
     file: {
       buffer: Buffer;
       mimetype: string;

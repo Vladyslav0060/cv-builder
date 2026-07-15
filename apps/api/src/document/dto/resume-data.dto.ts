@@ -9,16 +9,28 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-export enum ResumeTemplateIdDto {
-  CLASSIC = 'classic',
-  MODERN = 'modern',
-}
+export const ResumeTemplateIdDto = {
+  CLASSIC: 'classic',
+  MODERN: 'modern',
+  MINIMAL: 'minimal',
+} as const;
 
-export enum ResumeColorSchemeIdDto {
-  SLATE = 'slate',
-  FOREST = 'forest',
-  WINE = 'wine',
-}
+export type ResumeTemplateIdDto =
+  (typeof ResumeTemplateIdDto)[keyof typeof ResumeTemplateIdDto];
+
+export const ResumeColorSchemeIdDto = {
+  SLATE: 'slate',
+  FOREST: 'forest',
+  WINE: 'wine',
+  AMBER: 'amber',
+  ORCHID: 'orchid',
+  GRAPHITE: 'graphite',
+  TEAL: 'teal',
+  ROSE: 'rose',
+} as const;
+
+export type ResumeColorSchemeIdDto =
+  (typeof ResumeColorSchemeIdDto)[keyof typeof ResumeColorSchemeIdDto];
 
 export class ResumePersonalInfoDto {
   @ApiProperty()

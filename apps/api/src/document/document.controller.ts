@@ -26,7 +26,6 @@ import { toResumeExportPayload } from './mappers/resume.mapper';
 import { ResumeExportPayloadDto } from './dto/resume-data.dto';
 import { DocumentType } from 'generated/prisma/enums';
 import { createResumeConstructorPdfBuffer } from './document-pdf';
-import { type ResumeExportPayload } from '../shared/resume-constructor-data';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { AuthenticatedGuard } from 'src/auth/guards/authenticated.guard';
 import { SafeUser } from 'src/user/user.select';
@@ -54,7 +53,7 @@ export class DocumentController {
   @UseGuards(AuthenticatedGuard)
   async exportResumePdf(
     @CurrentUser() currentUser: SafeUser,
-    @Body() payload: ResumeExportPayload,
+    @Body() payload: ResumeExportPayloadDto,
   ) {
     await this.usageQuotaService.consumeQuota(currentUser.id, 'EXPORT');
 
