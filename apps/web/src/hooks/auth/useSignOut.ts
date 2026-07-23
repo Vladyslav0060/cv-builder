@@ -12,7 +12,6 @@ export const useSignOut = () => {
       return response.data;
     },
     onSuccess: async (data) => {
-      console.log(data);
       await qc.cancelQueries({ queryKey: ["me"] });
       qc.setQueryData(["me"], null);
       router.push(ROUTES.LOGIN);
