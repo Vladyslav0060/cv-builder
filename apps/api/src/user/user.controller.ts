@@ -38,6 +38,9 @@ import { Request, Response } from 'express';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { SafeUser } from './user.select';
 
+const AVATAR_FILE_SIZE_LIMIT_BYTES = 5 * 1024 * 1024;
+const AVATAR_MIME_TYPE_PATTERN = /^image\/(jpeg|png|webp|gif)$/;
+
 @Controller('user')
 export class UserController {
   constructor(private userService: UserService) {}
@@ -77,11 +80,13 @@ export class UserController {
   })
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: { fileSize: AVATAR_FILE_SIZE_LIMIT_BYTES },
       fileFilter: (_req, file, cb) => {
-        if (!file.mimetype.startsWith('image/')) {
+        if (!AVATAR_MIME_TYPE_PATTERN.test(file.mimetype)) {
           return cb(
-            new BadRequestException('Only image files are allowed'),
+            new BadRequestException(
+              'Only JPEG, PNG, WebP, and GIF images are allowed',
+            ),
             false,
           );
         }
@@ -94,8 +99,8 @@ export class UserController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }),
-          new FileTypeValidator({ fileType: /^image\// }),
+          new MaxFileSizeValidator({ maxSize: AVATAR_FILE_SIZE_LIMIT_BYTES }),
+          new FileTypeValidator({ fileType: AVATAR_MIME_TYPE_PATTERN }),
         ],
       }),
     )
