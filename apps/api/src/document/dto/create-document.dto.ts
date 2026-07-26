@@ -39,12 +39,6 @@ export class DocumentApplicantInfoDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUrl()
-  @MaxLength(2048)
-  avatarUrl?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
   @IsString()
   @MaxLength(200)
   address?: string;

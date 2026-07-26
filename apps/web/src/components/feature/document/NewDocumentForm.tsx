@@ -199,6 +199,8 @@ export const NewDocumentForm = () => {
     mode: "onChange",
   });
 
+  console.log("form.formState: ", form.formState);
+
   const creationMode = useWatch({
     control: form.control,
     name: "creationMode",
@@ -210,7 +212,6 @@ export const NewDocumentForm = () => {
         ...wizardDefaultValues,
         address: user?.address ?? "",
         achievements: user?.achievements ?? "",
-        avatarUrl: user?.avatarUrl ?? "",
         city: user?.city ?? "",
         country: user?.country ?? "",
         education: user?.education ?? "",

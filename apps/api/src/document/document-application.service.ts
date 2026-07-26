@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AiResumeResult, AiService } from 'src/ai/ai.service';
+import { AiResumeResult } from 'src/ai/ai.service';
 import { buildApplicantInfo } from 'src/ai/utils';
 import { UsageQuotaService } from 'src/usage/usage-quota.service';
 import { UserService } from 'src/user/user.service';
@@ -10,23 +10,24 @@ import {
 import { GetDocumentDto } from './dto/get-document.dto';
 import { GetDocumentsPreviewDto } from './dto/get-documents-preview.dto';
 import { ResumeExportPayloadDto } from './dto/resume-data.dto';
-import { createResumeConstructorPdfBuffer } from './document-pdf';
+import { DocumentCreationService } from './document-creation.service';
 import { DocumentService } from './document.service';
 import { toGetDocumentDto } from './mappers/get-document.mapper';
 import { toGetDocumentsPreviewDto } from './mappers/get-documents.mapper';
 import { toResumeExportPayload } from './mappers/resume.mapper';
-import { DocumentType } from 'generated/prisma/enums';
-
-function getDocumentTypeLabel(type: DocumentType) {
-  return type === 'RESUME' ? 'resume' : 'cover letter';
-}
+import { ResumeGenerationService } from './resume-generation.service';
+import { ResumeMappingService } from './resume-mapping.service';
+import { ResumePdfExportService } from './resume-pdf-export.service';
 
 @Injectable()
 export class DocumentApplicationService {
   constructor(
     private readonly documentService: DocumentService,
     private readonly userService: UserService,
-    private readonly aiService: AiService,
+    private readonly documentCreationService: DocumentCreationService,
+    private readonly resumeGenerationService: ResumeGenerationService,
+    private readonly resumeMappingService: ResumeMappingService,
+    private readonly resumePdfExportService: ResumePdfExportService,
     private readonly usageQuotaService: UsageQuotaService,
   ) {}
 
@@ -44,9 +45,6 @@ export class DocumentApplicationService {
 
     await this.usageQuotaService.consumeQuota(userId, 'CREATE');
 
-    const maxOutputTokens = process.env.MAX_OUTPUT_TOKENS
-      ? Number(process.env.MAX_OUTPUT_TOKENS)
-      : 600;
     const applicantSource =
       body.applicantInfo ??
       (creationMode === CreateDocumentDtoCreationMode.ACCOUNT
@@ -55,39 +53,15 @@ export class DocumentApplicationService {
     const applicantInfo = applicantSource
       ? buildApplicantInfo(applicantSource)
       : '';
-
-    let documentContent: string | null = null;
-
-    if (type === 'COVER_LETTER') {
-      const systemPrompt =
-        creationMode === CreateDocumentDtoCreationMode.ACCOUNT
-          ? `You are an expert career coach. Write a professional ${getDocumentTypeLabel(
-              type,
-            )} using the applicant's details and tailoring it to the job description. Keep formatting clean and professional. Use ${maxOutputTokens} tokens max.`
-          : `You are an expert career coach. Write a professional ${getDocumentTypeLabel(
-              type,
-            )} from scratch using the job brief. Keep formatting clean and professional. Use ${maxOutputTokens} tokens max.`;
-
-      const userPrompt = [
-        applicantInfo || null,
-        `Job Posting:
-Title: ${jobTitle}
-Company: ${company}
-Description: ${description}`,
-      ]
-        .filter(Boolean)
-        .join('\n\n');
-      const response = await this.aiService.ask(userPrompt, {
-        system: systemPrompt,
-        maxOutputTokens,
-      });
-      documentContent = response.text;
-    }
+    const documentContent = await this.documentCreationService.generateContent(
+      body,
+      applicantInfo,
+    );
 
     const [document, aiResumeData] = await Promise.all([
       this.documentService.createDocument(userId, body, documentContent),
       type === 'RESUME' && applicantSource && applicantInfo
-        ? this.aiService
+        ? this.resumeGenerationService
             .generateResume(applicantInfo, {
               title: jobTitle,
               company,
@@ -104,57 +78,16 @@ Description: ${description}`,
     ]);
 
     if (type === 'RESUME' && applicantSource && document) {
-      const fullName = [applicantSource.firstName, applicantSource.lastName]
-        .filter(Boolean)
-        .join(' ');
-      const location = [
-        applicantSource.city,
-        applicantSource.state,
-        applicantSource.country,
-      ]
-        .filter(Boolean)
-        .join(', ');
-      const fallbackSkills = applicantSource.skills
-        ? applicantSource.skills
-            .split(/[,\n]+/)
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [];
-
-      await this.documentService.upsertResume(userId, document.id, {
-        resume: {
-          personalInfo: {
-            fullName,
-            title: aiResumeData?.title ?? jobTitle,
-            email: applicantSource.email ?? '',
-            ...(applicantSource.phone && { phone: applicantSource.phone }),
-            ...(location && { location }),
-            ...(applicantSource.portfolio && {
-              website: applicantSource.portfolio,
-            }),
-            ...(applicantSource.linkedIn && {
-              linkedin: applicantSource.linkedIn,
-            }),
-          },
-          summary:
-            aiResumeData?.summary ?? applicantSource.summary ?? undefined,
-          experience: (aiResumeData?.experience ?? []).map((exp) => ({
-            ...exp,
-            endDate: exp.endDate ?? undefined,
-          })),
-          education: (aiResumeData?.education ?? []).map((edu) => ({
-            ...edu,
-            endDate: edu.endDate ?? undefined,
-          })),
-          skills: aiResumeData?.skills ?? fallbackSkills,
-          languages: aiResumeData?.languages ?? [],
-          projects: (aiResumeData?.projects ?? []).map((project) => ({
-            ...project,
-            endDate: project.endDate ?? undefined,
-          })),
-          certifications: aiResumeData?.certifications ?? [],
-        },
-      });
+      const resumePayload = this.resumeMappingService.fromApplicantInfo(
+        applicantSource,
+        jobTitle,
+        aiResumeData,
+      );
+      await this.documentService.upsertResume(
+        userId,
+        document.id,
+        resumePayload,
+      );
     }
 
     return toGetDocumentDto(document);
@@ -162,17 +95,7 @@ Description: ${description}`,
 
   async exportResumePdf(userId: string, payload: ResumeExportPayloadDto) {
     await this.usageQuotaService.consumeQuota(userId, 'EXPORT');
-
-    const pdfBuffer = await createResumeConstructorPdfBuffer(
-      payload.resume,
-      payload.template,
-      payload.colorScheme,
-    );
-    const filename = `${payload.resume.personalInfo.fullName || 'resume'}.pdf`
-      .replace(/[^\w.-]+/g, '_')
-      .replace(/^_+|_+$/g, '');
-
-    return { pdfBuffer, filename };
+    return this.resumePdfExportService.exportPdf(payload);
   }
 
   async getResumeData(userId: string, documentId: string) {
