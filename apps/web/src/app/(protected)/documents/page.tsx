@@ -19,6 +19,7 @@ import {
 import { Container } from "@/components/ui/container";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 const documentTypeLabels = {
@@ -57,8 +58,9 @@ function formatRelativeDate(value: string) {
 
 export default function Documents() {
   const router = useRouter();
-  const { data: documents } = useGetDocumentsPreview();
-  const { data: usage } = useGetUsage();
+  const { data: documents, isLoading: isDocumentsLoading } =
+    useGetDocumentsPreview();
+  const { data: usage, isLoading: isUsageLoading } = useGetUsage();
 
   const items = [...(documents ?? [])].sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
@@ -86,6 +88,7 @@ export default function Documents() {
         ? "Pro"
         : "Max"
     : null;
+  const isDashboardLoading = isDocumentsLoading || isUsageLoading;
 
   return (
     <div className="relative min-h-full overflow-hidden pb-14">
@@ -113,7 +116,9 @@ export default function Documents() {
                         <Sparkles className="mr-1.5 size-3.5" />
                         Document library
                       </Badge>
-                      {tierLabel && (
+                      {isUsageLoading ? (
+                        <Skeleton className="h-7 w-20 rounded-full" />
+                      ) : tierLabel ? (
                         <Link href={ROUTES.SETTINGS}>
                           <Badge
                             variant="outline"
@@ -122,7 +127,7 @@ export default function Documents() {
                             {tierLabel} plan
                           </Badge>
                         </Link>
-                      )}
+                      ) : null}
                     </div>
                     <CardTitle className="text-2xl sm:text-3xl">
                       Your documents, organized and ready to edit
@@ -150,9 +155,13 @@ export default function Documents() {
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Total
                   </p>
-                  <p className="mt-2 text-2xl font-semibold">
-                    {totalDocuments}
-                  </p>
+                  {isDocumentsLoading ? (
+                    <Skeleton className="mt-2 h-8 w-12" />
+                  ) : (
+                    <p className="mt-2 text-2xl font-semibold">
+                      {totalDocuments}
+                    </p>
+                  )}
                   <p className="mt-1 text-sm text-muted-foreground">
                     Saved documents
                   </p>
@@ -161,7 +170,13 @@ export default function Documents() {
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Resumes
                   </p>
-                  <p className="mt-2 text-2xl font-semibold">{resumeCount}</p>
+                  {isDocumentsLoading ? (
+                    <Skeleton className="mt-2 h-8 w-12" />
+                  ) : (
+                    <p className="mt-2 text-2xl font-semibold">
+                      {resumeCount}
+                    </p>
+                  )}
                   <p className="mt-1 text-sm text-muted-foreground">
                     Resume drafts
                   </p>
@@ -170,9 +185,13 @@ export default function Documents() {
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Cover letters
                   </p>
-                  <p className="mt-2 text-2xl font-semibold">
-                    {coverLetterCount}
-                  </p>
+                  {isDocumentsLoading ? (
+                    <Skeleton className="mt-2 h-8 w-12" />
+                  ) : (
+                    <p className="mt-2 text-2xl font-semibold">
+                      {coverLetterCount}
+                    </p>
+                  )}
                   <p className="mt-1 text-sm text-muted-foreground">
                     Tailored letters
                   </p>
@@ -181,9 +200,13 @@ export default function Documents() {
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Creations left
                   </p>
-                  <p className="mt-2 text-2xl font-semibold">
-                    {creationUsageLabel}
-                  </p>
+                  {isUsageLoading ? (
+                    <Skeleton className="mt-2 h-8 w-20" />
+                  ) : (
+                    <p className="mt-2 text-2xl font-semibold">
+                      {creationUsageLabel}
+                    </p>
+                  )}
                   <p className="mt-1 text-sm text-muted-foreground">
                     {usage?.create.unlimited
                       ? "Daily limit disabled in dev"
@@ -194,9 +217,13 @@ export default function Documents() {
                   <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Exports left
                   </p>
-                  <p className="mt-2 text-2xl font-semibold">
-                    {exportUsageLabel}
-                  </p>
+                  {isUsageLoading ? (
+                    <Skeleton className="mt-2 h-8 w-20" />
+                  ) : (
+                    <p className="mt-2 text-2xl font-semibold">
+                      {exportUsageLabel}
+                    </p>
+                  )}
                   <p className="mt-1 text-sm text-muted-foreground">
                     {usage?.export.unlimited
                       ? "Daily limit disabled in dev"
@@ -214,7 +241,22 @@ export default function Documents() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
-                {latestDocument ? (
+                {isDashboardLoading ? (
+                  <>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <Skeleton className="h-6 w-4/5" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                      <Skeleton className="h-6 w-24 rounded-full" />
+                    </div>
+                    <div className="rounded-2xl border border-border/60 bg-muted/40 p-4">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="mt-3 h-5 w-40" />
+                    </div>
+                    <Skeleton className="h-9 w-full" />
+                  </>
+                ) : latestDocument ? (
                   <>
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
@@ -285,7 +327,7 @@ export default function Documents() {
               </Button>
             </div>
 
-            {documents === undefined ? (
+            {isDocumentsLoading ? (
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {Array.from({ length: 6 }).map((_, index) => (
                   <Card
@@ -293,11 +335,17 @@ export default function Documents() {
                     className="border-border/60 bg-card/70 shadow-sm backdrop-blur"
                   >
                     <CardHeader>
-                      <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
-                      <div className="mt-3 h-3 w-full animate-pulse rounded bg-muted/80" />
+                      <Skeleton className="h-5 w-2/3" />
+                      <div className="mt-3 flex items-center gap-3">
+                        <Skeleton className="h-4 w-28" />
+                        <Skeleton className="h-5 w-20 rounded-full" />
+                      </div>
                     </CardHeader>
                     <CardContent className="pt-2">
-                      <div className="h-24 animate-pulse rounded-2xl bg-muted/70" />
+                      <div className="flex items-center justify-between gap-3 rounded-2xl border border-border/60 bg-muted/35 px-3 py-2">
+                        <Skeleton className="h-4 w-36" />
+                        <Skeleton className="size-4 rounded-full" />
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

@@ -17,6 +17,7 @@ import { useSignOut } from "@/hooks/auth/useSignOut";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import {
   AddressInfoInputs,
@@ -90,7 +91,7 @@ export const PERSONAL_NAME_FIELDS = [
 
 export const ProfileForm = () => {
   const me = useCurrentUser();
-  const { data: user } = useEnrichedUser(me?.id);
+  const { data: user, isLoading: isUserLoading } = useEnrichedUser(me?.id);
   const { mutateAsync, isPending, isError } = useUpdateUser();
     const { mutate: signOut, isPending: isSigningOut } = useSignOut();
 
@@ -210,9 +211,16 @@ export const ProfileForm = () => {
               <Typography element="h3" as="h5">
                 Profile Completion
               </Typography>
-              <Badge variant="secondary" className="rounded-full px-2.5 py-0.5">
-                {user?.profileFilledPercentage ?? 0}%
-              </Badge>
+              {isUserLoading ? (
+                <Skeleton className="h-6 w-12 rounded-full" />
+              ) : (
+                <Badge
+                  variant="secondary"
+                  className="rounded-full px-2.5 py-0.5"
+                >
+                  {user?.profileFilledPercentage ?? 0}%
+                </Badge>
+              )}
             </div>
             <Typography element="p" as="mutedText" className="max-w-lg">
               Fill in the remaining details to make your CV profile stronger and
@@ -222,14 +230,18 @@ export const ProfileForm = () => {
 
           <div className="w-full sm:max-w-xs">
             <div className="h-2 overflow-hidden rounded-full bg-muted">
-              <div
-                className={cn(
-                  "h-full rounded-full bg-linear-to-r from-emerald-400 via-lime-400 to-amber-300 transition-[width] duration-500 ease-out",
-                  (user?.profileFilledPercentage ?? 0) === 100 &&
-                    "from-emerald-500 via-emerald-400 to-emerald-300",
-                )}
-                style={{ width: `${user?.profileFilledPercentage ?? 0}%` }}
-              />
+              {isUserLoading ? (
+                <Skeleton className="h-full w-3/5 rounded-full" />
+              ) : (
+                <div
+                  className={cn(
+                    "h-full rounded-full bg-linear-to-r from-emerald-400 via-lime-400 to-amber-300 transition-[width] duration-500 ease-out",
+                    (user?.profileFilledPercentage ?? 0) === 100 &&
+                      "from-emerald-500 via-emerald-400 to-emerald-300",
+                  )}
+                  style={{ width: `${user?.profileFilledPercentage ?? 0}%` }}
+                />
+              )}
             </div>
             <div className="mt-2 flex justify-between text-xs text-muted-foreground">
               <span>Incomplete</span>
@@ -255,9 +267,29 @@ export const ProfileForm = () => {
             <TabsContent key={tabValue} value={tabValue}>
               <Card>
                 <CardContent>
-                  <FieldGroup>
-                    {renderTabGroup(tabValue, { isPending })}
-                  </FieldGroup>
+                  {isUserLoading ? (
+                    <FieldGroup>
+                      {Array.from({
+                        length: tabValue === USER_TABS.DETAILS ? 6 : 4,
+                      }).map((_, index) => (
+                          <div key={index} className="space-y-2">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton
+                              className={cn(
+                                "w-full",
+                                tabValue === USER_TABS.DETAILS
+                                  ? "h-24"
+                                  : "h-9",
+                              )}
+                            />
+                          </div>
+                      ))}
+                    </FieldGroup>
+                  ) : (
+                    <FieldGroup>
+                      {renderTabGroup(tabValue, { isPending })}
+                    </FieldGroup>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { Control } from "react-hook-form";
 
 import {
@@ -17,7 +18,7 @@ import { WizardStep } from "./wizard-steps";
 import { WizardStepField } from "./wizard-step-field";
 import { WizardStepMessage } from "./wizard-step-message";
 
-export function WizardStepPanel({
+export const WizardStepPanel = memo(function WizardStepPanel({
   step,
   control,
   disabled,
@@ -69,4 +70,4 @@ export function WizardStepPanel({
       ) : null}
     </Card>
   );
-}
+});

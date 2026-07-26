@@ -7,6 +7,7 @@ import { Editor } from "@/components/blocks/editor-md/editor";
 import { PageBreadcrumbs } from "@/components/layout/page-breadcrumbs";
 import { ROUTES } from "@/common/routes";
 import { Container } from "@/components/ui/container";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useGetDocument } from "@/hooks/document/useGetDocument";
 import { useUpdateDocumentContent } from "@/hooks/document/useUpdateDocumentContent";
 
@@ -76,8 +77,29 @@ export const DocumentPage = ({
       />
       <Container variant={"fullMobileConstrainedBreakpointPadded"}>
         {document === undefined ? (
-          <div className="min-h-150 p-4 text-sm text-muted-foreground">
-            Loading document...
+          <div className="min-h-150 rounded-xl border bg-card/80 shadow-sm">
+            <div className="flex flex-wrap items-center gap-2 border-b p-3">
+              {Array.from({ length: 10 }).map((_, index) => (
+                <Skeleton
+                  key={index}
+                  className={index % 3 === 0 ? "h-8 w-20" : "h-8 w-8"}
+                />
+              ))}
+            </div>
+            <div className="space-y-4 p-6">
+              <Skeleton className="h-8 w-2/3" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-11/12" />
+              <Skeleton className="h-4 w-5/6" />
+              <div className="pt-4 space-y-3">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <Skeleton
+                    key={index}
+                    className={index === 4 ? "h-4 w-3/5" : "h-4 w-full"}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         ) : document ? (
           <Editor
