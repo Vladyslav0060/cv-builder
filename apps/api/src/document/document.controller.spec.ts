@@ -2,23 +2,20 @@ jest.mock('./document-pdf', () => ({
   createResumeConstructorPdfBuffer: jest.fn(),
 }));
 
-import { DocumentController } from './document.controller';
 import { DocumentService } from './document.service';
 import { UserService } from 'src/user/user.service';
 import { AiService } from 'src/ai/ai.service';
 import { UsageQuotaService } from 'src/usage/usage-quota.service';
 import { createResumeConstructorPdfBuffer } from './document-pdf';
-import { SafeUser } from 'src/user/user.select';
 import { type ResumeExportPayload } from '../shared/resume-constructor-data';
+import { DocumentApplicationService } from './document-application.service';
 
-describe('DocumentController', () => {
-  let controller: DocumentController;
+describe('DocumentApplicationService', () => {
+  let service: DocumentApplicationService;
   let documentService: Partial<Record<keyof DocumentService, jest.Mock>>;
   let userService: Partial<Record<keyof UserService, jest.Mock>>;
   let aiService: Partial<Record<keyof AiService, jest.Mock>>;
   let usageQuotaService: { consumeQuota: jest.Mock };
-
-  const currentUser = { id: 'user_1' } as SafeUser;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -38,7 +35,7 @@ describe('DocumentController', () => {
       consumeQuota: jest.fn().mockResolvedValue(undefined),
     };
 
-    controller = new DocumentController(
+    service = new DocumentApplicationService(
       documentService as unknown as DocumentService,
       userService as unknown as UserService,
       aiService as unknown as AiService,
@@ -58,7 +55,7 @@ describe('DocumentController', () => {
     } as unknown as ResumeExportPayload;
 
     it('consumes the EXPORT quota before generating the PDF', async () => {
-      await controller.exportResumePdf(currentUser, payload);
+      await service.exportResumePdf('user_1', payload);
 
       expect(usageQuotaService.consumeQuota).toHaveBeenCalledWith(
         'user_1',
@@ -72,9 +69,9 @@ describe('DocumentController', () => {
         new Error('Daily export limit reached'),
       );
 
-      await expect(
-        controller.exportResumePdf(currentUser, payload),
-      ).rejects.toThrow('Daily export limit reached');
+      await expect(service.exportResumePdf('user_1', payload)).rejects.toThrow(
+        'Daily export limit reached',
+      );
       expect(createResumeConstructorPdfBuffer).not.toHaveBeenCalled();
     });
   });
@@ -90,7 +87,7 @@ describe('DocumentController', () => {
         return { text: 'cover letter' };
       });
 
-      await controller.createDocument(currentUser, {
+      await service.createDocument('user_1', {
         type: 'COVER_LETTER',
         jobTitle: 'Engineer',
         company: 'Acme',
@@ -110,7 +107,7 @@ describe('DocumentController', () => {
       );
 
       await expect(
-        controller.createDocument(currentUser, {
+        service.createDocument('user_1', {
           type: 'COVER_LETTER',
           jobTitle: 'Engineer',
           company: 'Acme',

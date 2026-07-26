@@ -28,10 +28,14 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { TransferSessionDto } from './dto/transfer-session.dto';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { SafeUser } from 'src/user/user.select';
+import { AuthApplicationService } from './auth-application.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private authApplicationService: AuthApplicationService,
+  ) {}
 
   @Post('login')
   @ApiOperation({ summary: 'Local Strategy Login' })
@@ -75,11 +79,10 @@ export class AuthController {
     @Req() req: any,
     @Body() createUserDto: CreateUserDto,
   ): Promise<any> {
-    const user = await this.authService.register(createUserDto);
-    await new Promise<void>((resolve, reject) =>
-      req.logIn(user, (err: any) => (err ? reject(err) : resolve())),
+    return this.authApplicationService.registerAndCreateSession(
+      req,
+      createUserDto,
     );
-    return user;
   }
 
   @Post('verify-email')
@@ -131,7 +134,8 @@ export class AuthController {
 
     const redirectUrl = process.env.AUTH_SUCCESS_REDIRECT_URL;
     if (redirectUrl) {
-      const transferToken = this.authService.createTransferToken(req.user.id);
+      const transferToken =
+        this.authApplicationService.createGoogleTransferToken(req.user);
       // Destroy session now; a new one is created via POST /auth/transfer-session
       // through the frontend proxy so the cookie lands on the frontend domain.
       req.session?.destroy(() => {});
@@ -152,14 +156,7 @@ export class AuthController {
     @Req() req: any,
     @Body() dto: TransferSessionDto,
   ): Promise<MeDto> {
-    const userId = this.authService.verifyTransferToken(dto.token);
-    if (!userId) throw new UnauthorizedException('Invalid or expired token');
-    const user = await this.authService.getUserForSession(userId);
-    if (!user) throw new UnauthorizedException('User not found');
-    await new Promise<void>((resolve, reject) =>
-      req.logIn(user, (err: any) => (err ? reject(err) : resolve())),
-    );
-    return toMeDto(user);
+    return this.authApplicationService.transferSession(req, dto);
   }
 
   @Post('logout')
