@@ -1,24 +1,30 @@
-jest.mock('./document-pdf', () => ({
-  createResumeConstructorPdfBuffer: jest.fn(),
-}));
-
-import { DocumentController } from './document.controller';
 import { DocumentService } from './document.service';
 import { UserService } from 'src/user/user.service';
-import { AiService } from 'src/ai/ai.service';
 import { UsageQuotaService } from 'src/usage/usage-quota.service';
-import { createResumeConstructorPdfBuffer } from './document-pdf';
-import { SafeUser } from 'src/user/user.select';
 import { type ResumeExportPayload } from '../shared/resume-constructor-data';
+import { DocumentApplicationService } from './document-application.service';
+import { DocumentCreationService } from './document-creation.service';
+import { ResumeGenerationService } from './resume-generation.service';
+import { ResumeMappingService } from './resume-mapping.service';
+import { ResumePdfExportService } from './resume-pdf-export.service';
 
-describe('DocumentController', () => {
-  let controller: DocumentController;
+describe('DocumentApplicationService', () => {
+  let service: DocumentApplicationService;
   let documentService: Partial<Record<keyof DocumentService, jest.Mock>>;
   let userService: Partial<Record<keyof UserService, jest.Mock>>;
-  let aiService: Partial<Record<keyof AiService, jest.Mock>>;
+  let documentCreationService: Partial<
+    Record<keyof DocumentCreationService, jest.Mock>
+  >;
+  let resumeGenerationService: Partial<
+    Record<keyof ResumeGenerationService, jest.Mock>
+  >;
+  let resumeMappingService: Partial<
+    Record<keyof ResumeMappingService, jest.Mock>
+  >;
+  let resumePdfExportService: Partial<
+    Record<keyof ResumePdfExportService, jest.Mock>
+  >;
   let usageQuotaService: { consumeQuota: jest.Mock };
-
-  const currentUser = { id: 'user_1' } as SafeUser;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -30,23 +36,33 @@ describe('DocumentController', () => {
     userService = {
       findEnrichedUser: jest.fn().mockResolvedValue(undefined),
     };
-    aiService = {
-      ask: jest.fn().mockResolvedValue({ text: 'generated text' }),
+    documentCreationService = {
+      generateContent: jest.fn().mockResolvedValue('generated text'),
+    };
+    resumeGenerationService = {
       generateResume: jest.fn().mockResolvedValue({}),
+    };
+    resumeMappingService = {
+      fromApplicantInfo: jest.fn().mockReturnValue({ resume: {} }),
+    };
+    resumePdfExportService = {
+      exportPdf: jest.fn().mockResolvedValue({
+        pdfBuffer: Buffer.from('pdf'),
+        filename: 'Jane_Doe.pdf',
+      }),
     };
     usageQuotaService = {
       consumeQuota: jest.fn().mockResolvedValue(undefined),
     };
 
-    controller = new DocumentController(
+    service = new DocumentApplicationService(
       documentService as unknown as DocumentService,
       userService as unknown as UserService,
-      aiService as unknown as AiService,
+      documentCreationService as unknown as DocumentCreationService,
+      resumeGenerationService as unknown as ResumeGenerationService,
+      resumeMappingService as unknown as ResumeMappingService,
+      resumePdfExportService as unknown as ResumePdfExportService,
       usageQuotaService as unknown as UsageQuotaService,
-    );
-
-    (createResumeConstructorPdfBuffer as jest.Mock).mockResolvedValue(
-      Buffer.from('pdf'),
     );
   });
 
@@ -58,13 +74,13 @@ describe('DocumentController', () => {
     } as unknown as ResumeExportPayload;
 
     it('consumes the EXPORT quota before generating the PDF', async () => {
-      await controller.exportResumePdf(currentUser, payload);
+      await service.exportResumePdf('user_1', payload);
 
       expect(usageQuotaService.consumeQuota).toHaveBeenCalledWith(
         'user_1',
         'EXPORT',
       );
-      expect(createResumeConstructorPdfBuffer).toHaveBeenCalled();
+      expect(resumePdfExportService.exportPdf).toHaveBeenCalledWith(payload);
     });
 
     it('propagates the 429 from the quota check without rendering a PDF', async () => {
@@ -72,10 +88,10 @@ describe('DocumentController', () => {
         new Error('Daily export limit reached'),
       );
 
-      await expect(
-        controller.exportResumePdf(currentUser, payload),
-      ).rejects.toThrow('Daily export limit reached');
-      expect(createResumeConstructorPdfBuffer).not.toHaveBeenCalled();
+      await expect(service.exportResumePdf('user_1', payload)).rejects.toThrow(
+        'Daily export limit reached',
+      );
+      expect(resumePdfExportService.exportPdf).not.toHaveBeenCalled();
     });
   });
 
@@ -85,12 +101,12 @@ describe('DocumentController', () => {
       usageQuotaService.consumeQuota.mockImplementation(async () => {
         callOrder.push('quota');
       });
-      (aiService.ask as jest.Mock).mockImplementation(async () => {
+      documentCreationService.generateContent?.mockImplementation(async () => {
         callOrder.push('ask');
-        return { text: 'cover letter' };
+        return 'cover letter';
       });
 
-      await controller.createDocument(currentUser, {
+      await service.createDocument('user_1', {
         type: 'COVER_LETTER',
         jobTitle: 'Engineer',
         company: 'Acme',
@@ -110,15 +126,30 @@ describe('DocumentController', () => {
       );
 
       await expect(
-        controller.createDocument(currentUser, {
+        service.createDocument('user_1', {
           type: 'COVER_LETTER',
           jobTitle: 'Engineer',
           company: 'Acme',
           description: 'Build things',
         } as any),
       ).rejects.toThrow('Daily create limit reached');
-      expect(aiService.ask).not.toHaveBeenCalled();
+      expect(documentCreationService.generateContent).not.toHaveBeenCalled();
       expect(documentService.createDocument).not.toHaveBeenCalled();
+    });
+
+    it('propagates document persistence errors', async () => {
+      documentService.createDocument?.mockRejectedValue(
+        new Error('create failed'),
+      );
+
+      await expect(
+        service.createDocument('user_1', {
+          type: 'COVER_LETTER',
+          jobTitle: 'Engineer',
+          company: 'Acme',
+          description: 'Build things',
+        } as any),
+      ).rejects.toThrow('create failed');
     });
   });
 });

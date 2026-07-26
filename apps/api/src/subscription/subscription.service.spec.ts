@@ -23,12 +23,6 @@ describe('SubscriptionService', () => {
   let stripeSubscriptionsUpdate: jest.Mock;
 
   beforeEach(() => {
-    process.env.STRIPE_SECRET_KEY = 'sk_test_dummy';
-    process.env.STRIPE_PRO_MONTHLY_PRICE_ID = 'price_pro_month';
-    process.env.STRIPE_PRO_6M_PRICE_ID = 'price_pro_6m';
-    process.env.STRIPE_MAX_MONTHLY_PRICE_ID = 'price_max_month';
-    process.env.STRIPE_MAX_6M_PRICE_ID = 'price_max_6m';
-
     prisma = {
       forSystem: jest.fn((cb: (tx: typeof prisma) => unknown) => cb(prisma)),
       forUser: jest.fn((_userId: string, cb: (tx: typeof prisma) => unknown) =>
@@ -49,6 +43,20 @@ describe('SubscriptionService', () => {
     service = new SubscriptionService(
       prisma as unknown as PrismaService,
       usageQuotaService as unknown as UsageQuotaService,
+      {
+        secretKey: 'sk_test_dummy',
+        webhookSecret: 'whsec_test_dummy',
+        apiVersion: '2026-05-27.dahlia',
+        prices: {
+          proMonthly: 'price_pro_month',
+          proSixMonth: 'price_pro_6m',
+          maxMonthly: 'price_max_month',
+          maxSixMonth: 'price_max_6m',
+        },
+      },
+      {
+        baseUrl: 'http://localhost:3000',
+      },
     );
 
     stripeSubscriptionsRetrieve = jest.fn();

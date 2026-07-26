@@ -3,6 +3,8 @@
 import { Download, LoaderCircle, Maximize2 } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import {
+  memo,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -93,11 +95,12 @@ function useHasFinePointer() {
 
 type Theme = (typeof resumeColorSchemes)[number];
 
+const themeById = new Map(
+  resumeColorSchemes.map((scheme) => [scheme.id, scheme]),
+);
+
 function getTheme(colorScheme: ResumeColorSchemeId): Theme {
-  return (
-    resumeColorSchemes.find((scheme) => scheme.id === colorScheme) ??
-    resumeColorSchemes[0]
-  );
+  return themeById.get(colorScheme) ?? resumeColorSchemes[0];
 }
 
 function formatDateRange(
@@ -240,7 +243,7 @@ function MinimalPreview({
             resume.personalInfo.github,
           ]
             .filter(isPresent)
-            .map((item, index, arr) => (
+            .map((item, index) => (
               <span key={item} className="flex items-center gap-x-1">
                 {index > 0 ? (
                   <span style={{ color: theme.border }}>·</span>
@@ -562,7 +565,7 @@ function MinimalPreview({
   );
 }
 
-function ResumePreviewPage({
+const ResumePreviewPage = memo(function ResumePreviewPage({
   resume,
   template,
   theme,
@@ -576,7 +579,7 @@ function ResumePreviewPage({
   if (template === "modern")
     return <ModernPreview resume={resume} theme={theme} />;
   return <MinimalPreview resume={resume} theme={theme} />;
-}
+});
 
 function ClassicPreview({
   resume,
@@ -1518,7 +1521,7 @@ export function PreviewSurface({
   colorScheme: ResumeColorSchemeId;
   onEmptyPointerDown?: () => void;
 }) {
-  const theme = getTheme(colorScheme);
+  const theme = useMemo(() => getTheme(colorScheme), [colorScheme]);
   const { ref, size } = useElementSize<HTMLDivElement>();
   const hasFinePointer = useHasFinePointer();
   const [pointer, setPointer] = useState<{ x: number; y: number } | null>(null);
@@ -1544,7 +1547,7 @@ export function PreviewSurface({
     );
   }, [size.height, size.width]);
 
-  const isInsidePage = (x: number, y: number) => {
+  const isInsidePage = useCallback((x: number, y: number) => {
     const pageWidth = RESUME_A4_WIDTH_PX * scale;
     const pageHeight = RESUME_A4_HEIGHT_PX * scale;
     const pageLeft = (size.width - pageWidth) / 2;
@@ -1555,12 +1558,11 @@ export function PreviewSurface({
     return (
       localX >= 0 && localY >= 0 && localX <= pageWidth && localY <= pageHeight
     );
-  };
+  }, [scale, size.height, size.width]);
 
   const magnifiedScale = scale * PREVIEW_MAGNIFIER_SCALE;
-  let magnifier: ReactNode = null;
 
-  const updatePointer = (
+  const updatePointer = useCallback((
     event: ReactPointerEvent<HTMLDivElement>,
     options?: { reset?: boolean },
   ) => {
@@ -1576,9 +1578,11 @@ export function PreviewSurface({
       x: event.clientX - rect.left,
       y: event.clientY - rect.top,
     });
-  };
+  }, [hasFinePointer]);
 
-  if (hasFinePointer && pointer) {
+  const magnifier = useMemo<ReactNode>(() => {
+    if (!hasFinePointer || !pointer) return null;
+
     const pageWidth = RESUME_A4_WIDTH_PX * scale;
     const pageHeight = RESUME_A4_HEIGHT_PX * scale;
     const pageLeft = (size.width - pageWidth) / 2;
@@ -1586,51 +1590,62 @@ export function PreviewSurface({
     const localX = pointer.x - pageLeft;
     const localY = pointer.y - pageTop;
 
-    if (isInsidePage(pointer.x, pointer.y)) {
-      magnifier = (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute z-10 rounded-full border border-white/75 bg-white/10 shadow-[0_18px_48px_rgba(15,23,42,0.24)] backdrop-blur-[2px]"
-          style={{
-            width: PREVIEW_MAGNIFIER_SIZE_PX,
-            height: PREVIEW_MAGNIFIER_SIZE_PX,
-            left: Math.min(
-              Math.max(pointer.x + 24, 12),
-              Math.max(size.width - PREVIEW_MAGNIFIER_SIZE_PX - 12, 12),
-            ),
-            top: Math.min(
-              Math.max(pointer.y + 24, 12),
-              Math.max(size.height - PREVIEW_MAGNIFIER_SIZE_PX - 12, 12),
-            ),
-          }}
-        >
-          <div className="absolute inset-0 overflow-hidden rounded-full">
-            <div
-              style={{
-                width: RESUME_A4_WIDTH_PX,
-                height: RESUME_A4_HEIGHT_PX,
-                transform: `translate(${
-                  PREVIEW_MAGNIFIER_SIZE_PX / 2 -
-                  localX * PREVIEW_MAGNIFIER_SCALE
-                }px, ${
-                  PREVIEW_MAGNIFIER_SIZE_PX / 2 -
-                  localY * PREVIEW_MAGNIFIER_SCALE
-                }px) scale(${magnifiedScale})`,
-                transformOrigin: "top left",
-              }}
-            >
-              <ResumePreviewPage
-                resume={resume}
-                template={template}
-                theme={theme}
-              />
-            </div>
+    if (!isInsidePage(pointer.x, pointer.y)) return null;
+
+    return (
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute z-10 rounded-full border border-white/75 bg-white/10 shadow-[0_18px_48px_rgba(15,23,42,0.24)] backdrop-blur-[2px]"
+        style={{
+          width: PREVIEW_MAGNIFIER_SIZE_PX,
+          height: PREVIEW_MAGNIFIER_SIZE_PX,
+          left: Math.min(
+            Math.max(pointer.x + 24, 12),
+            Math.max(size.width - PREVIEW_MAGNIFIER_SIZE_PX - 12, 12),
+          ),
+          top: Math.min(
+            Math.max(pointer.y + 24, 12),
+            Math.max(size.height - PREVIEW_MAGNIFIER_SIZE_PX - 12, 12),
+          ),
+        }}
+      >
+        <div className="absolute inset-0 overflow-hidden rounded-full">
+          <div
+            style={{
+              width: RESUME_A4_WIDTH_PX,
+              height: RESUME_A4_HEIGHT_PX,
+              transform: `translate(${
+                PREVIEW_MAGNIFIER_SIZE_PX / 2 -
+                localX * PREVIEW_MAGNIFIER_SCALE
+              }px, ${
+                PREVIEW_MAGNIFIER_SIZE_PX / 2 -
+                localY * PREVIEW_MAGNIFIER_SCALE
+              }px) scale(${magnifiedScale})`,
+              transformOrigin: "top left",
+            }}
+          >
+            <ResumePreviewPage
+              resume={resume}
+              template={template}
+              theme={theme}
+            />
           </div>
-          <div className="absolute inset-0 rounded-full ring-1 ring-black/5" />
         </div>
-      );
-    }
-  }
+        <div className="absolute inset-0 rounded-full ring-1 ring-black/5" />
+      </div>
+    );
+  }, [
+    hasFinePointer,
+    isInsidePage,
+    magnifiedScale,
+    pointer,
+    resume,
+    scale,
+    size.height,
+    size.width,
+    template,
+    theme,
+  ]);
 
   return (
     <div

@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useForm, useWatch, type UseFormReturn } from "react-hook-form";
 import { z } from "zod";
 
@@ -75,7 +75,7 @@ type DocumentWizardContentProps = {
   isCreating: boolean;
 };
 
-function DocumentWizardContent({
+const DocumentWizardContent = memo(function DocumentWizardContent({
   creationMode,
   createDocument,
   form,
@@ -88,7 +88,7 @@ function DocumentWizardContent({
   const isFinalFormStep =
     activeStep.kind === "form" && stepIndex === steps.length - 1;
 
-  const goNext = async () => {
+  const goNext = useCallback(async () => {
     if (activeStep.kind === "form") {
       const result = activeStep.schema.safeParse(form.getValues());
       if (!result.success) {
@@ -100,21 +100,55 @@ function DocumentWizardContent({
     }
 
     setStepIndex((current) => Math.min(current + 1, steps.length - 1));
-  };
+  }, [activeStep, form, steps.length]);
 
-  const goBack = () => {
+  const goBack = useCallback(() => {
     setStepIndex((current) => Math.max(current - 1, 0));
-  };
+  }, []);
 
-  const onSubmit = form.handleSubmit(async (values) => {
-    const finalResult = wizardResolverSchema.safeParse(values);
-    if (!finalResult.success) {
-      applyZodErrors(form, finalResult.error);
-      return;
-    }
+  const onSubmit = useMemo(
+    () =>
+      form.handleSubmit(async (values) => {
+        const finalResult = wizardResolverSchema.safeParse(values);
+        if (!finalResult.success) {
+          applyZodErrors(form, finalResult.error);
+          return;
+        }
 
-    await createDocument(buildDocumentPayload(values));
-  });
+        await createDocument(buildDocumentPayload(values));
+      }),
+    [createDocument, form],
+  );
+
+  const footer = useMemo(
+    () => (
+      <>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={goBack}
+          disabled={stepIndex === 0 || isBusy}
+        >
+          Back
+        </Button>
+
+        {isFinalFormStep ? (
+          <Button type="submit" disabled={isBusy}>
+            {activeStep.kind === "form" && activeStep.submitLabel
+              ? activeStep.submitLabel
+              : "Continue"}
+          </Button>
+        ) : (
+          <Button type="button" onClick={goNext} disabled={isBusy}>
+            {activeStep.kind === "message"
+              ? activeStep.continueLabel
+              : (activeStep.submitLabel ?? "Continue")}
+          </Button>
+        )}
+      </>
+    ),
+    [activeStep, goBack, goNext, isBusy, isFinalFormStep, stepIndex],
+  );
 
   return (
     <div className="relative flex w-full min-w-0 max-w-3xl flex-col gap-4">
@@ -153,39 +187,14 @@ function DocumentWizardContent({
           step={activeStep}
           control={form.control}
           disabled={isBusy}
-          footer={
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={goBack}
-                disabled={stepIndex === 0 || isBusy}
-              >
-                Back
-              </Button>
-
-              {isFinalFormStep ? (
-                <Button type="submit" disabled={isBusy}>
-                  {activeStep.kind === "form" && activeStep.submitLabel
-                    ? activeStep.submitLabel
-                    : "Continue"}
-                </Button>
-              ) : (
-                <Button type="button" onClick={goNext} disabled={isBusy}>
-                  {activeStep.kind === "message"
-                    ? activeStep.continueLabel
-                    : (activeStep.submitLabel ?? "Continue")}
-                </Button>
-              )}
-            </>
-          }
+          footer={footer}
         />
       </form>
 
       {isCreating ? <DocumentAiLoader mode={creationMode} /> : null}
     </div>
   );
-}
+});
 
 export const NewDocumentForm = () => {
   const currentUser = useCurrentUser();
@@ -210,7 +219,6 @@ export const NewDocumentForm = () => {
         ...wizardDefaultValues,
         address: user?.address ?? "",
         achievements: user?.achievements ?? "",
-        avatarUrl: user?.avatarUrl ?? "",
         city: user?.city ?? "",
         country: user?.country ?? "",
         education: user?.education ?? "",

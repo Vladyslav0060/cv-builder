@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMe } from "@/hooks/auth/useMe";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/common/routes";
@@ -42,9 +43,13 @@ function formatAmount(amount: number | null, currency: string) {
   }).format(amount / 100);
 }
 
-export function PricingSection() {
+type PricingSectionProps = {
+  initialPlans: PlanDto[];
+};
+
+export function PricingSection({ initialPlans }: PricingSectionProps) {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
-  const { data: plans, isLoading } = usePlans();
+  const { data: plans, isLoading } = usePlans(initialPlans);
   const { data: me } = useMe();
   const { data: currentSubscription } = useGetCurrentSubscription({
     enabled: !!me?.isAuthenticated,
@@ -98,7 +103,33 @@ export function PricingSection() {
       <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
         {isLoading || !plans
           ? Array.from({ length: 3 }).map((_, index) => (
-              <Card key={index} className="h-80 animate-pulse" />
+              <Card key={index}>
+                <CardHeader>
+                  <div className="flex items-center justify-between gap-4">
+                    <Skeleton className="h-6 w-20" />
+                    {index === 1 && (
+                      <Skeleton className="h-6 w-24 rounded-full" />
+                    )}
+                  </div>
+                  <div className="mt-2 flex items-end gap-2">
+                    <Skeleton className="h-9 w-24" />
+                    <Skeleton className="h-4 w-10" />
+                  </div>
+                </CardHeader>
+                <CardContent className="flex flex-col gap-6">
+                  <div className="flex flex-col gap-3">
+                    {Array.from({ length: index === 0 ? 3 : 4 }).map(
+                      (_, perkIndex) => (
+                        <div key={perkIndex} className="flex items-center gap-2">
+                          <Skeleton className="size-4 shrink-0 rounded-full" />
+                          <Skeleton className="h-4 w-36" />
+                        </div>
+                      ),
+                    )}
+                  </div>
+                  <Skeleton className="h-9 w-full" />
+                </CardContent>
+              </Card>
             ))
           : plans.map((plan) => {
               const amount =

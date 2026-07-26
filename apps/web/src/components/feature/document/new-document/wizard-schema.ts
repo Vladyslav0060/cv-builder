@@ -11,7 +11,6 @@ export function trimOrUndefined(value: string | undefined) {
 export const wizardDefaultValues = {
   address: "",
   achievements: "",
-  avatarUrl: "",
   city: "",
   company: "",
   country: "",

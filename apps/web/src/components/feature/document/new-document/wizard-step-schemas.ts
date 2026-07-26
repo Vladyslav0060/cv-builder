@@ -23,9 +23,6 @@ export const accountPersonalStepSchema = z.object({
   lastName: z.string().trim().min(1, "Enter a last name."),
   email: z.string().trim().email("Enter a valid email address."),
   phone: z.string().trim().min(1, "Enter a phone number."),
-  avatarUrl: z
-    .union([z.string().trim().url("Enter a valid URL."), z.literal("")])
-    .optional(),
   linkedIn: z
     .union([z.string().trim().url("Enter a valid URL."), z.literal("")])
     .optional(),
@@ -76,9 +73,6 @@ export const wizardResolverSchema = z
       ])
       .optional(),
     phone: z.string().trim().optional(),
-    avatarUrl: z
-      .union([z.string().trim().url("Enter a valid URL."), z.literal("")])
-      .optional(),
     linkedIn: z
       .union([z.string().trim().url("Enter a valid URL."), z.literal("")])
       .optional(),
@@ -141,7 +135,6 @@ export type NewDocumentWizardValues = z.infer<typeof wizardResolverSchema>;
 export const wizardDefaultValues = {
   address: "",
   achievements: "",
-  avatarUrl: "",
   certifications: "",
   city: "",
   company: "",

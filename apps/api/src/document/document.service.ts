@@ -45,19 +45,17 @@ export class DocumentService {
     createDocumentDto: CreateDocumentDto,
     content: string | null,
   ) {
-    try {
-      const { type, jobTitle } = createDocumentDto;
-      return this.prisma.forUser(userId, (tx) =>
-        tx.document.create({
-          data: {
-            userId,
-            content,
-            title: jobTitle,
-            type,
-          },
-        }),
-      );
-    } catch (error) {}
+    const { type, jobTitle } = createDocumentDto;
+    return this.prisma.forUser(userId, (tx) =>
+      tx.document.create({
+        data: {
+          userId,
+          content,
+          title: jobTitle,
+          type,
+        },
+      }),
+    );
   }
 
   async updateDocumentContent(

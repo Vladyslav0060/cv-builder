@@ -1,6 +1,4 @@
-import Stripe from 'stripe';
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -23,10 +21,14 @@ import { PlanDto } from './dto/get-plans.dto';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
 import { CheckoutSessionDto } from './dto/checkout-session.dto';
 import { CurrentSubscriptionDto } from './dto/current-subscription.dto';
+import { SubscriptionApplicationService } from './subscription-application.service';
 
 @Controller('subscription')
 export class SubscriptionController {
-  constructor(private subscriptionService: SubscriptionService) {}
+  constructor(
+    private subscriptionService: SubscriptionService,
+    private subscriptionApplicationService: SubscriptionApplicationService,
+  ) {}
 
   @Get('plans')
   @ApiOkResponse({ type: [PlanDto] })
@@ -50,11 +52,10 @@ export class SubscriptionController {
     @CurrentUser() currentUser: SafeUser,
     @Body() body: CreateCheckoutSessionDto,
   ): Promise<CheckoutSessionDto> {
-    const session = await this.subscriptionService.createCheckoutSession(
+    return this.subscriptionApplicationService.createCheckoutSession(
       currentUser.id,
-      body.priceId,
+      body,
     );
-    return { url: session.url };
   }
 
   @Get('current')
@@ -77,13 +78,9 @@ export class SubscriptionController {
     @Req() req: RawBodyRequest<Request>,
     @Headers('stripe-signature') signature: string,
   ) {
-    let event: Stripe.Event;
-    try {
-      if (!req.rawBody) throw new BadRequestException('rawBody is missing');
-      event = this.subscriptionService.constructEvent(req.rawBody, signature);
-    } catch (error) {
-      throw new BadRequestException('Webhook signature verification failed');
-    }
-    await this.subscriptionService.handleWebhookEvent(event);
+    await this.subscriptionApplicationService.handleWebhook(
+      req.rawBody,
+      signature,
+    );
   }
 }

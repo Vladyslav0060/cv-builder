@@ -23,6 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ROUTES } from "@/common/routes";
 import { useGetCurrentSubscription } from "@/hooks/subscription/useGetCurrentSubscription";
 import { useCancelSubscription } from "@/hooks/subscription/useCancelSubscription";
@@ -46,7 +47,32 @@ export function CurrentPlanCard() {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   if (isLoading || !subscription) {
-    return <Card className="h-56 animate-pulse" />;
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4">
+            <Skeleton className="h-6 w-28" />
+            <Skeleton className="h-6 w-16 rounded-full" />
+          </div>
+          <Skeleton className="h-4 w-48" />
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-3">
+          {Array.from({ length: 2 }).map((_, index) => (
+            <div
+              key={index}
+              className="rounded-2xl border border-border/60 bg-muted/40 p-4"
+            >
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="mt-3 h-8 w-14" />
+            </div>
+          ))}
+        </CardContent>
+        <CardFooter className="gap-2">
+          <Skeleton className="h-9 w-28" />
+          <Skeleton className="h-9 w-36" />
+        </CardFooter>
+      </Card>
+    );
   }
 
   const tierLabel = TIER_LABELS[subscription.tier] ?? subscription.tier;

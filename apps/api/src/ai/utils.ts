@@ -7,7 +7,6 @@ type ApplicantInfoLike = Pick<
   | 'lastName'
   | 'email'
   | 'phone'
-  | 'avatarUrl'
   | 'address'
   | 'city'
   | 'state'

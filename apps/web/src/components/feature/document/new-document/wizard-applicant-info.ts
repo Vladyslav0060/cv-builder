@@ -11,7 +11,6 @@ import { trimOrUndefined } from "./wizard-schema";
 export type WizardApplicantInfoValues = {
   address?: string;
   achievements?: string;
-  avatarUrl?: string;
   certifications?: string;
   city?: string;
   country?: string;
@@ -99,9 +98,6 @@ export const scratchIdentityStepSchema = z.object({
   lastName: z.string().trim().optional(),
   email: z.string().trim().email("Enter a valid email address."),
   phone: z.string().trim().optional(),
-  avatarUrl: z
-    .union([z.string().trim().url("Enter a valid URL."), z.literal("")])
-    .optional(),
   linkedIn: z
     .union([z.string().trim().url("Enter a valid URL."), z.literal("")])
     .optional(),
@@ -131,7 +127,6 @@ export function buildApplicantInfoPayload(
   const applicantInfo = {
     address: trimOrUndefined(values.address),
     achievements: trimOrUndefined(values.achievements),
-    avatarUrl: trimOrUndefined(values.avatarUrl),
     certifications: trimOrUndefined(values.certifications),
     city: trimOrUndefined(values.city),
     country: trimOrUndefined(values.country),

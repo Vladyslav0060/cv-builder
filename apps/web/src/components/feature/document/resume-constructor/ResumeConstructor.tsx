@@ -1,6 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   Award,
   BriefcaseBusiness,
@@ -133,7 +141,7 @@ function tagsToText(tags: string[]) {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function TagsInput({
+const TagsInput = memo(function TagsInput({
   value,
   onChange,
   placeholder,
@@ -164,9 +172,9 @@ function TagsInput({
       }}
     />
   );
-}
+});
 
-function Field({
+const Field = memo(function Field({
   label,
   children,
   className,
@@ -183,9 +191,9 @@ function Field({
       {children}
     </div>
   );
-}
+});
 
-function ListEditor({
+const ListEditor = memo(function ListEditor({
   label,
   icon,
   values,
@@ -198,7 +206,7 @@ function ListEditor({
   onChange: (next: string[]) => void;
   placeholder: string;
 }) {
-  const visibleValues = values.length ? values : [""];
+  const visibleValues = useMemo(() => (values.length ? values : [""]), [values]);
 
   return (
     <Card className="border-border/60 bg-card/70 shadow-sm">
@@ -256,7 +264,7 @@ function ListEditor({
       </CardContent>
     </Card>
   );
-}
+});
 
 function ResumeEntryCard({
   entry,
@@ -623,45 +631,112 @@ function SectionCard({
 
 const SAVE_TOAST_ID = "resume-unsaved-changes";
 
-export function ResumeConstructor({ documentId }: { documentId?: string } = {}) {
-  const { data: existingResume } = useGetResume(documentId ?? "");
-  const { data: userProfile } = useEnrichedMe();
+function LoadingBlock({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "animate-pulse rounded-md bg-muted",
+        className,
+      )}
+    />
+  );
+}
+
+function buildProfileResume(userProfile: NonNullable<ReturnType<typeof useEnrichedMe>["data"]>) {
+  const fullName = [userProfile.firstName, userProfile.lastName]
+    .filter(Boolean)
+    .join(" ");
+  const location = [userProfile.city, userProfile.state, userProfile.country]
+    .filter(Boolean)
+    .join(", ");
+
+  return {
+    ...defaultResumeData,
+    personalInfo: {
+      ...defaultResumeData.personalInfo,
+      ...(fullName && { fullName }),
+      email: userProfile.email,
+      ...(userProfile.phone && { phone: userProfile.phone }),
+      ...(location && { location }),
+      ...(userProfile.portfolio && { website: userProfile.portfolio }),
+      ...(userProfile.linkedIn && { linkedin: userProfile.linkedIn }),
+    },
+  };
+}
+
+function ResumeConstructorSkeleton() {
+  return (
+    <div className="flex min-h-screen flex-col overflow-x-clip">
+      <div className="mx-auto grid min-h-full w-full min-w-0 max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_clamp(340px,30vw,460px)]">
+          <section className="flex min-w-0 flex-col">
+            <div className="mb-6 space-y-3">
+              <LoadingBlock className="h-6 w-40 rounded-full" />
+              <LoadingBlock className="h-9 w-80 max-w-full" />
+              <LoadingBlock className="h-4 w-full max-w-2xl" />
+              <LoadingBlock className="h-4 w-3/4 max-w-xl" />
+            </div>
+
+            <div className="space-y-6">
+              {Array.from({ length: 4 }).map((_, cardIndex) => (
+                <Card
+                  key={cardIndex}
+                  className="border-border/60 bg-card/75 shadow-sm backdrop-blur"
+                >
+                  <CardHeader className="border-b border-border/50 pb-4">
+                    <LoadingBlock className="h-5 w-44" />
+                    <LoadingBlock className="h-4 w-72 max-w-full" />
+                  </CardHeader>
+                  <CardContent className="grid gap-4 pt-4 md:grid-cols-2">
+                    {Array.from({ length: cardIndex === 2 ? 2 : 4 }).map(
+                      (_, fieldIndex) => (
+                        <div key={fieldIndex} className="space-y-2">
+                          <LoadingBlock className="h-3 w-24" />
+                          <LoadingBlock
+                            className={cardIndex === 2 ? "h-28" : "h-9"}
+                          />
+                        </div>
+                      ),
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+
+          <section className="hidden min-w-0 xl:flex xl:w-[clamp(340px,30vw,460px)] xl:shrink-0">
+            <div className="flex w-full flex-col xl:sticky xl:top-6 xl:h-[calc(100dvh-9.5rem)]">
+              <div className="flex shrink-0 items-center gap-2 pb-4">
+                <LoadingBlock className="h-6 w-28 rounded-full" />
+                <LoadingBlock className="h-6 w-32 rounded-full" />
+              </div>
+              <div className="flex-1 rounded-xl border bg-card/80 p-4">
+                <LoadingBlock className="mx-auto h-full w-full max-w-[320px] rounded-sm" />
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ResumeConstructorEditor({
+  documentId,
+  initialPayload,
+}: {
+  documentId?: string;
+  initialPayload: ResumeExportPayload;
+}) {
   const { mutate: saveResume } = useSaveResume(documentId ?? "");
 
-  const [resume, setResume] = useState<ResumeData>(defaultResumeData);
-  const [template, setTemplate] = useState<ResumeTemplateId>("classic");
-  const [colorScheme, setColorScheme] = useState<ResumeColorSchemeId>("slate");
-  const [appliedResume, setAppliedResume] = useState<ResumeExportPayload | null>(null);
-  const [profileApplied, setProfileApplied] = useState(false);
-
-  if (existingResume && existingResume !== appliedResume) {
-    setAppliedResume(existingResume);
-    setResume(existingResume.resume);
-    setTemplate(existingResume.template ?? "classic");
-    setColorScheme(existingResume.colorScheme ?? "slate");
-  }
-
-  if (existingResume === null && !profileApplied && userProfile) {
-    setProfileApplied(true);
-    const fullName = [userProfile.firstName, userProfile.lastName]
-      .filter(Boolean)
-      .join(" ");
-    const location = [userProfile.city, userProfile.state, userProfile.country]
-      .filter(Boolean)
-      .join(", ");
-    setResume((prev) => ({
-      ...prev,
-      personalInfo: {
-        ...prev.personalInfo,
-        ...(fullName && { fullName }),
-        email: userProfile.email,
-        ...(userProfile.phone && { phone: userProfile.phone }),
-        ...(location && { location }),
-        ...(userProfile.portfolio && { website: userProfile.portfolio }),
-        ...(userProfile.linkedIn && { linkedin: userProfile.linkedIn }),
-      },
-    }));
-  }
+  const [resume, setResume] = useState<ResumeData>(initialPayload.resume);
+  const [template, setTemplate] = useState<ResumeTemplateId>(
+    initialPayload.template ?? "classic",
+  );
+  const [colorScheme, setColorScheme] = useState<ResumeColorSchemeId>(
+    initialPayload.colorScheme ?? "slate",
+  );
 
   const exportPayload = useMemo<ResumeExportPayload>(
     () => ({ resume, template, colorScheme }),
@@ -669,6 +744,9 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
   );
   const { mutate: downloadResumePdf, isPending: isExportingPdf } =
     useDownloadResumePdf(exportPayload);
+  const handleExportPdf = useCallback(() => {
+    downloadResumePdf();
+  }, [downloadResumePdf]);
 
   const selectedScheme = useMemo(
     () =>
@@ -682,18 +760,11 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
     exportPayloadRef.current = exportPayload;
   }, [exportPayload]);
 
-  const savedPayloadRef = useRef<string | null>(null);
+  const savedPayloadRef = useRef(JSON.stringify(initialPayload));
   useEffect(() => {
     if (!documentId) return;
-    if (existingResume === undefined) return;
-    if (existingResume === null && !profileApplied) return;
 
     const payloadStr = JSON.stringify(exportPayload);
-
-    if (savedPayloadRef.current === null) {
-      savedPayloadRef.current = payloadStr;
-      return;
-    }
 
     if (payloadStr !== savedPayloadRef.current) {
       toast("Unsaved changes", {
@@ -716,7 +787,7 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
     } else {
       toast.dismiss(SAVE_TOAST_ID);
     }
-  }, [exportPayload, existingResume, documentId, profileApplied, saveResume]);
+  }, [exportPayload, documentId, saveResume]);
 
   useEffect(() => {
     return () => {
@@ -724,7 +795,7 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
     };
   }, []);
 
-  const setPersonalInfo = (
+  const setPersonalInfo = useCallback((
     key: keyof ResumeData["personalInfo"],
     value: string,
   ) => {
@@ -732,9 +803,9 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
       ...current,
       personalInfo: { ...current.personalInfo, [key]: value },
     }));
-  };
+  }, []);
 
-  const addExperience = () =>
+  const addExperience = useCallback(() => {
     setResume((c) => ({
       ...c,
       experience: [
@@ -751,8 +822,9 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
         },
       ],
     }));
+  }, []);
 
-  const addEducation = () =>
+  const addEducation = useCallback(() => {
     setResume((c) => ({
       ...c,
       education: [
@@ -767,8 +839,9 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
         },
       ],
     }));
+  }, []);
 
-  const addProject = () =>
+  const addProject = useCallback(() => {
     setResume((c) => ({
       ...c,
       projects: [
@@ -784,8 +857,9 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
         },
       ],
     }));
+  }, []);
 
-  const addCertification = () =>
+  const addCertification = useCallback(() => {
     setResume((c) => ({
       ...c,
       certifications: [
@@ -793,8 +867,9 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
         { id: createId("cert"), name: "", issuer: "", date: "" },
       ],
     }));
+  }, []);
 
-  const sections: SectionConfig[] = [
+  const sections = useMemo<SectionConfig[]>(() => [
     {
       key: "experience",
       icon: <BriefcaseBusiness className="size-4" />,
@@ -908,7 +983,16 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
         />
       )),
     },
-  ];
+  ], [
+    addCertification,
+    addEducation,
+    addExperience,
+    addProject,
+    resume.certifications,
+    resume.education,
+    resume.experience,
+    resume.projects,
+  ]);
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-clip">
@@ -1095,7 +1179,7 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
                 template={template}
                 colorScheme={colorScheme}
                 isExporting={isExportingPdf}
-                onExport={() => downloadResumePdf()}
+                onExport={handleExportPdf}
                 showFixedMobileActions
               />
             </div>
@@ -1103,5 +1187,50 @@ export function ResumeConstructor({ documentId }: { documentId?: string } = {}) 
         </div>
       </div>
     </div>
+  );
+}
+
+export function ResumeConstructor({ documentId }: { documentId?: string } = {}) {
+  const { data: existingResume } = useGetResume(documentId ?? "");
+  const { data: userProfile } = useEnrichedMe();
+
+  const initialPayload = useMemo<ResumeExportPayload | null>(() => {
+    if (!documentId) {
+      return {
+        resume: defaultResumeData,
+        template: "classic",
+        colorScheme: "slate",
+      };
+    }
+
+    if (existingResume === undefined) return null;
+
+    if (existingResume) {
+      return {
+        resume: existingResume.resume,
+        template: existingResume.template ?? "classic",
+        colorScheme: existingResume.colorScheme ?? "slate",
+      };
+    }
+
+    if (userProfile === undefined) return null;
+
+    return {
+      resume: userProfile ? buildProfileResume(userProfile) : defaultResumeData,
+      template: "classic",
+      colorScheme: "slate",
+    };
+  }, [documentId, existingResume, userProfile]);
+
+  if (!initialPayload) {
+    return <ResumeConstructorSkeleton />;
+  }
+
+  return (
+    <ResumeConstructorEditor
+      key={`${documentId ?? "new"}:${JSON.stringify(initialPayload)}`}
+      documentId={documentId}
+      initialPayload={initialPayload}
+    />
   );
 }

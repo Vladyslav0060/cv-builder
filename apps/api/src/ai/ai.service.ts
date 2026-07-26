@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DEFAULT_CLOUDFLARE_AI_MODELS } from 'src/config/ai.config';
 import { AiRequestLimiterService } from './ai-request-limiter.service';
 
 type AskOptions = {
@@ -55,10 +56,34 @@ export class AiService {
     private readonly limiter: AiRequestLimiterService,
   ) {}
 
+  private getModels(): string[] {
+    const configuredModels = this.cfg.get<string[]>('ai.models');
+    if (configuredModels?.length) return configuredModels;
+
+    const legacyModel = this.cfg.get<string>('CLOUDFLARE_AI_MODEL');
+    const envModels = this.cfg.get<string>('CLOUDFLARE_AI_MODELS');
+
+    return [
+      ...new Set(
+        [
+          legacyModel,
+          ...(envModels?.split(',') ?? []),
+          ...DEFAULT_CLOUDFLARE_AI_MODELS,
+        ]
+          .map((model) => model?.trim())
+          .filter((model): model is string => Boolean(model)),
+      ),
+    ];
+  }
+
   async ask(input: string, opts: AskOptions = {}) {
     return this.limiter.runWithLimits(async () => {
-      const accountId = this.cfg.get<string>('CLOUDFLARE_ACCOUNT_ID');
-      const apiToken = this.cfg.get<string>('CLOUDFLARE_API_TOKEN');
+      const accountId =
+        this.cfg.get<string>('ai.cloudflareAccountId') ??
+        this.cfg.get<string>('CLOUDFLARE_ACCOUNT_ID');
+      const apiToken =
+        this.cfg.get<string>('ai.cloudflareApiToken') ??
+        this.cfg.get<string>('CLOUDFLARE_API_TOKEN');
 
       if (!accountId || !apiToken) {
         throw new Error(
@@ -66,45 +91,56 @@ export class AiService {
         );
       }
 
-      const model = '@cf/meta/llama-3.1-8b-instruct';
+      const models = this.getModels();
       const maxOutputTokens = opts.maxOutputTokens ?? 500; // hard cap: biggest saver
 
-      const resp = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${apiToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model,
-            messages: [
-              { role: 'system', content: opts.system || '' },
-              { role: 'user', content: input },
-            ],
-            max_tokens: maxOutputTokens,
-          }),
-        },
-      );
+      let lastError = '';
 
-      if (!resp.ok) {
-        const text = await resp.text().catch(() => '');
-        throw new Error(
-          `Cloudflare AI request failed: ${resp.status} ${resp.statusText} ${
-            text ? `- ${text}` : ''
-          }`,
+      for (const model of models) {
+        const resp = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${apiToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messages: [
+                { role: 'system', content: opts.system || '' },
+                { role: 'user', content: input },
+              ],
+              max_tokens: maxOutputTokens,
+            }),
+          },
         );
+
+        if (!resp.ok) {
+          const text = await resp.text().catch(() => '');
+          lastError = `${resp.status} ${resp.statusText} ${
+            text ? `- ${text}` : ''
+          }`;
+
+          if (resp.status === 404) continue;
+
+          throw new Error(`Cloudflare AI request failed: ${lastError}`);
+        }
+
+        const data: any = await resp.json();
+        const output = data?.result?.response ?? '';
+
+        return {
+          text: output,
+          requestId: data?.result?.id ?? data?.result_id ?? undefined,
+          model,
+        };
       }
 
-      const data: any = await resp.json();
-      const output = data?.result?.response ?? '';
-
-      return {
-        text: output,
-        requestId: data?.result?.id ?? data?.result_id ?? undefined,
-        model,
-      };
+      throw new Error(
+        `Cloudflare AI request failed for all configured models (${models.join(
+          ', ',
+        )}): ${lastError}`,
+      );
     });
   }
 
