@@ -43,9 +43,13 @@ function formatAmount(amount: number | null, currency: string) {
   }).format(amount / 100);
 }
 
-export function PricingSection() {
+type PricingSectionProps = {
+  initialPlans: PlanDto[];
+};
+
+export function PricingSection({ initialPlans }: PricingSectionProps) {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
-  const { data: plans, isLoading } = usePlans();
+  const { data: plans, isLoading } = usePlans(initialPlans);
   const { data: me } = useMe();
   const { data: currentSubscription } = useGetCurrentSubscription({
     enabled: !!me?.isAuthenticated,
