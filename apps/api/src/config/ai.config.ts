@@ -22,4 +22,9 @@ export const aiConfig = registerAs('ai', () => ({
     ),
   ],
   maxOutputTokens: numberEnv('MAX_OUTPUT_TOKENS', 500),
+  coverLetterMaxOutputTokens: numberEnv(
+    'AI_COVER_LETTER_MAX_OUTPUT_TOKENS',
+    600,
+  ),
+  resumeMaxOutputTokens: numberEnv('AI_RESUME_MAX_OUTPUT_TOKENS', 2800),
 }));

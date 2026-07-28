@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DEFAULT_CLOUDFLARE_AI_MODELS } from 'src/config/ai.config';
+import { AI_TRANSPORT, AiTransport } from './ai-transport';
 import { AiRequestLimiterService } from './ai-request-limiter.service';
 
 type AskOptions = {
@@ -49,98 +49,48 @@ export type AiResumeResult = {
   }>;
 };
 
+function parseResumeResult(text: string): AiResumeResult {
+  const jsonMatch = text.trim().match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return {};
+
+  try {
+    const parsed: unknown = JSON.parse(jsonMatch[0]);
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
+      return {};
+    }
+
+    return parsed as AiResumeResult;
+  } catch {
+    return {};
+  }
+}
+
 @Injectable()
 export class AiService {
   constructor(
     private readonly cfg: ConfigService,
     private readonly limiter: AiRequestLimiterService,
+    @Inject(AI_TRANSPORT) private readonly transport: AiTransport,
   ) {}
-
-  private getModels(): string[] {
-    const configuredModels = this.cfg.get<string[]>('ai.models');
-    if (configuredModels?.length) return configuredModels;
-
-    const legacyModel = this.cfg.get<string>('CLOUDFLARE_AI_MODEL');
-    const envModels = this.cfg.get<string>('CLOUDFLARE_AI_MODELS');
-
-    return [
-      ...new Set(
-        [
-          legacyModel,
-          ...(envModels?.split(',') ?? []),
-          ...DEFAULT_CLOUDFLARE_AI_MODELS,
-        ]
-          .map((model) => model?.trim())
-          .filter((model): model is string => Boolean(model)),
-      ),
-    ];
-  }
 
   async ask(input: string, opts: AskOptions = {}) {
     return this.limiter.runWithLimits(async () => {
-      const accountId =
-        this.cfg.get<string>('ai.cloudflareAccountId') ??
-        this.cfg.get<string>('CLOUDFLARE_ACCOUNT_ID');
-      const apiToken =
-        this.cfg.get<string>('ai.cloudflareApiToken') ??
-        this.cfg.get<string>('CLOUDFLARE_API_TOKEN');
+      const maxOutputTokens =
+        opts.maxOutputTokens ??
+        this.cfg.get<number>('ai.maxOutputTokens') ??
+        500;
 
-      if (!accountId || !apiToken) {
-        throw new Error(
-          'Cloudflare Workers AI credentials are missing (CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN)',
-        );
-      }
-
-      const models = this.getModels();
-      const maxOutputTokens = opts.maxOutputTokens ?? 500; // hard cap: biggest saver
-
-      let lastError = '';
-
-      for (const model of models) {
-        const resp = await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/${model}`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${apiToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              messages: [
-                { role: 'system', content: opts.system || '' },
-                { role: 'user', content: input },
-              ],
-              max_tokens: maxOutputTokens,
-            }),
-          },
-        );
-
-        if (!resp.ok) {
-          const text = await resp.text().catch(() => '');
-          lastError = `${resp.status} ${resp.statusText} ${
-            text ? `- ${text}` : ''
-          }`;
-
-          if (resp.status === 404) continue;
-
-          throw new Error(`Cloudflare AI request failed: ${lastError}`);
-        }
-
-        const data: any = await resp.json();
-        const output = data?.result?.response ?? '';
-
-        return {
-          text: output,
-          requestId: data?.result?.id ?? data?.result_id ?? undefined,
-          model,
-        };
-      }
-
-      throw new Error(
-        `Cloudflare AI request failed for all configured models (${models.join(
-          ', ',
-        )}): ${lastError}`,
-      );
+      return this.transport.complete({
+        messages: [
+          { role: 'system', content: opts.system || '' },
+          { role: 'user', content: input },
+        ],
+        maxOutputTokens,
+      });
     });
   }
 
@@ -180,16 +130,12 @@ Parse the applicant's experience, education, projects, and certifications from t
 
     const result = await this.ask(userPrompt, {
       system: systemPrompt,
-      maxOutputTokens: 2800,
+      maxOutputTokens:
+        this.cfg.get<number>('ai.resumeMaxOutputTokens') ??
+        this.cfg.get<number>('ai.maxOutputTokens') ??
+        2800,
     });
 
-    const jsonMatch = result.text.trim().match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return {};
-
-    try {
-      return JSON.parse(jsonMatch[0]) as AiResumeResult;
-    } catch {
-      return {};
-    }
+    return parseResumeResult(result.text);
   }
 }
