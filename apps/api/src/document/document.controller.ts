@@ -19,6 +19,7 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CreateAiCoverLetterDto } from './dto/create-ai-cover-letter.dto';
 import { CreateAiResumeDto } from './dto/create-ai-resume.dto';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentContentDto } from './dto/update-document-content.dto';
@@ -137,6 +138,21 @@ export class DocumentController {
       currentUser.id,
       body,
       file,
+    );
+  }
+
+  @Post('cover-letter/ai')
+  @ApiOperation({ summary: 'Create an AI-generated cover letter' })
+  @ApiBody({ type: CreateAiCoverLetterDto })
+  @ApiOkResponse({ type: GetDocumentDto })
+  @UseGuards(AuthenticatedGuard)
+  async createAiCoverLetter(
+    @CurrentUser() currentUser: SafeUser,
+    @Body() body: CreateAiCoverLetterDto,
+  ) {
+    return this.documentApplicationService.createAiCoverLetter(
+      currentUser.id,
+      body,
     );
   }
 

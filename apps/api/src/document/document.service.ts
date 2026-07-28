@@ -72,6 +72,23 @@ export class DocumentService {
     );
   }
 
+  async createCoverLetterDocument(
+    userId: string,
+    title: string,
+    content: string,
+  ) {
+    return this.prisma.forUser(userId, (tx) =>
+      tx.document.create({
+        data: {
+          userId,
+          content,
+          title,
+          type: DocumentType.COVER_LETTER,
+        },
+      }),
+    );
+  }
+
   async updateDocumentContent(
     userId: string,
     documentId: string,

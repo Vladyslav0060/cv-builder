@@ -343,4 +343,46 @@ Quality rules:
 
     return parseGeneratedResumeResult(result.text);
   }
+
+  async generateCoverLetterFromBrief(input: {
+    applicant: string;
+    proposal: string;
+    proof: string;
+    preferences?: string;
+  }): Promise<string> {
+    const systemPrompt = `You are an expert proposal and cover-letter writer.
+Write a highly tailored cover letter for a job proposal.
+Return ONLY markdown content for the letter. Do not include code fences, frontmatter, commentary, or placeholders.
+
+Quality rules:
+- Lead with a specific connection to the client's need, not a generic introduction.
+- Use the applicant's provided background and proof only. Do not invent employers, metrics, dates, certifications, rates, links, or availability.
+- Make it persuasive for a proposal: show understanding of the problem, explain relevant experience, and close with a clear next step.
+- Keep the tone professional, confident, and human.
+- Use 4-6 concise paragraphs or short sections.
+- Avoid overused phrases such as "I am writing to express my interest", "dynamic team", "perfect fit", and "synergy".
+- If the recipient, company, or client name is unknown, do not use a fake salutation; start with the letter body.
+- Keep the final output ready to edit in a rich-text markdown editor.`;
+
+    const userPrompt = [
+      `Applicant details:\n${input.applicant}`,
+      `Proposal or job context:\n${input.proposal}`,
+      `Relevant proof and differentiators:\n${input.proof}`,
+      input.preferences
+        ? `Tone, constraints, and call-to-action preferences:\n${input.preferences}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+
+    const result = await this.ask(userPrompt, {
+      system: systemPrompt,
+      maxOutputTokens:
+        this.cfg.get<number>('ai.coverLetterMaxOutputTokens') ??
+        this.cfg.get<number>('ai.maxOutputTokens') ??
+        900,
+    });
+
+    return result.text.trim();
+  }
 }

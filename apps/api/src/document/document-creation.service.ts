@@ -5,6 +5,7 @@ import {
   CreateDocumentDto,
   CreateDocumentDtoCreationMode,
 } from './dto/create-document.dto';
+import { CreateAiCoverLetterDto } from './dto/create-ai-cover-letter.dto';
 
 function getDocumentTypeLabel(type: CreateDocumentDto['type']) {
   return type === 'RESUME' ? 'resume' : 'cover letter';
@@ -61,5 +62,9 @@ Description: ${description}`,
     });
 
     return response.text;
+  }
+
+  async generateAiCoverLetter(body: CreateAiCoverLetterDto): Promise<string> {
+    return this.aiService.generateCoverLetterFromBrief(body);
   }
 }
