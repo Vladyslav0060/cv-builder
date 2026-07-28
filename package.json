@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "concurrently \"npm:dev:api\" \"npm:dev:web\"",
     "dev:api": "cd apps/api && npm run start:dev",
+    "debug:api": "cd apps/api && npm run start:debug",
     "dev:web": "cd apps/web && npm run dev"
   },
   "dependencies": {

@@ -1192,6 +1192,7 @@ function ResumeConstructorEditor({
 
 export function ResumeConstructor({ documentId }: { documentId?: string } = {}) {
   const { data: existingResume } = useGetResume(documentId ?? "");
+  console.log({existingResume})
   const { data: userProfile } = useEnrichedMe();
 
   const initialPayload = useMemo<ResumeExportPayload | null>(() => {

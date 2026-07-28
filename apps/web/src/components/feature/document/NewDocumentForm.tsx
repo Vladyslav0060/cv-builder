@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrentUser } from "@/hooks/auth/current-user";
 import { useCreateDocument } from "@/hooks/document/useCreateDocument";
 import { useEnrichedUser } from "@/hooks/user/useEnrichedUser";
@@ -32,6 +33,7 @@ import {
 import { WizardStepPanel } from "./new-document/wizard-step-panel";
 import { DocumentAiLoader } from "./new-document/document-ai-loader";
 import { buildWizardSteps } from "./new-document/wizard-steps";
+import { AiResumeCreationForm } from "./AiResumeCreationForm";
 
 function toErrorPath(path: Array<string | number | symbol>) {
   const first = path[0];
@@ -196,7 +198,7 @@ const DocumentWizardContent = memo(function DocumentWizardContent({
   );
 });
 
-export const NewDocumentForm = () => {
+const ManualNewDocumentWizard = () => {
   const currentUser = useCurrentUser();
   const { data: user } = useEnrichedUser(currentUser?.id);
   const { mutateAsync: createDocument, isPending: isCreating } =
@@ -256,5 +258,24 @@ export const NewDocumentForm = () => {
       form={form}
       isCreating={isCreating}
     />
+  );
+};
+
+export const NewDocumentForm = () => {
+  return (
+    <div className="w-full max-w-4xl">
+      <Tabs defaultValue="ai" className="gap-4">
+        <TabsList className="w-full justify-start sm:w-fit">
+          <TabsTrigger value="ai">AI resume</TabsTrigger>
+          <TabsTrigger value="manual">Manual setup</TabsTrigger>
+        </TabsList>
+        <TabsContent value="ai">
+          <AiResumeCreationForm />
+        </TabsContent>
+        <TabsContent value="manual">
+          <ManualNewDocumentWizard />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };

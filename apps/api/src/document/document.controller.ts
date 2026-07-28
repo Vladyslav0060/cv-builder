@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -6,9 +7,19 @@ import {
   Patch,
   Post,
   StreamableFile,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiParam } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiConsumes,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+} from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { CreateAiResumeDto } from './dto/create-ai-resume.dto';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentContentDto } from './dto/update-document-content.dto';
 import { GetDocumentsPreviewDto } from './dto/get-documents-preview.dto';
@@ -18,6 +29,14 @@ import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { AuthenticatedGuard } from 'src/auth/guards/authenticated.guard';
 import { SafeUser } from 'src/user/user.select';
 import { DocumentApplicationService } from './document-application.service';
+
+const RESUME_UPLOAD_LIMIT_BYTES = 5 * 1024 * 1024;
+const RESUME_UPLOAD_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+  'text/markdown',
+]);
 
 @Controller('document')
 export class DocumentController {
@@ -44,6 +63,81 @@ export class DocumentController {
       disposition: `attachment; filename="${filename}"`,
       type: 'application/pdf',
     });
+  }
+
+  @Post('resume/ai')
+  @ApiOperation({ summary: 'Create an AI-generated resume from short inputs' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['introduction', 'background'],
+      properties: {
+        introduction: {
+          type: 'string',
+          description:
+            'Who the applicant is, contact details, seniority, and career direction.',
+        },
+        background: {
+          type: 'string',
+          description:
+            'Experience, skills, achievements, education, and project notes.',
+        },
+        target: {
+          type: 'string',
+          description: 'Optional target role, company, or job description.',
+        },
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Optional old CV as PDF, DOCX, TXT, or Markdown.',
+        },
+      },
+    },
+  })
+  @ApiOkResponse({ type: GetDocumentDto })
+  @UseGuards(AuthenticatedGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: RESUME_UPLOAD_LIMIT_BYTES },
+      fileFilter: (_req, file, cb) => {
+        const filename = file.originalname.toLowerCase();
+        const allowed =
+          RESUME_UPLOAD_MIME_TYPES.has(file.mimetype) ||
+          filename.endsWith('.pdf') ||
+          filename.endsWith('.docx') ||
+          filename.endsWith('.txt') ||
+          filename.endsWith('.md');
+
+        if (!allowed) {
+          return cb(
+            new BadRequestException(
+              'Upload a PDF, DOCX, TXT, or Markdown CV file.',
+            ),
+            false,
+          );
+        }
+
+        cb(null, true);
+      },
+    }),
+  )
+  async createAiResume(
+    @CurrentUser() currentUser: SafeUser,
+    @Body() body: CreateAiResumeDto,
+    @UploadedFile()
+    file?: {
+      buffer: Buffer;
+      mimetype: string;
+      originalname: string;
+      size: number;
+    },
+  ) {
+    return this.documentApplicationService.createAiResume(
+      currentUser.id,
+      body,
+      file,
+    );
   }
 
   @Get('resume/:documentId')

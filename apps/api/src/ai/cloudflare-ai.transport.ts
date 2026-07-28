@@ -7,10 +7,7 @@ import {
 } from './ai-transport';
 
 type CloudflareAiSuccessBody = {
-  result?: {
-    response?: unknown;
-    id?: unknown;
-  };
+  result?: unknown;
   result_id?: unknown;
 };
 
@@ -19,15 +16,75 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function getResponseText(data: unknown): string | null {
-  if (!isRecord(data) || !isRecord(data.result)) return null;
+  if (!isRecord(data)) return null;
 
-  const response = data.result.response;
-  return typeof response === 'string' ? response : null;
+  return extractText(data.result);
+}
+
+function extractText(value: unknown): string | null {
+  if (typeof value === 'string') {
+    return value.trim() ? value : null;
+  }
+
+  if (Array.isArray(value)) {
+    const text = value
+      .map((item) => extractText(item))
+      .filter((item): item is string => Boolean(item))
+      .join('\n')
+      .trim();
+
+    return text || null;
+  }
+
+  if (!isRecord(value)) return null;
+
+  for (const key of [
+    'response',
+    'text',
+    'generated_text',
+    'output',
+    'summary',
+    'description',
+  ]) {
+    const text = extractText(value[key]);
+    if (text) return text;
+  }
+
+  const choices = value.choices;
+  if (Array.isArray(choices)) {
+    const text = choices
+      .map((choice) => {
+        if (!isRecord(choice)) return null;
+        const message = choice.message;
+        return isRecord(message)
+          ? extractText(message.content)
+          : extractText(choice.text);
+      })
+      .filter((item): item is string => Boolean(item))
+      .join('\n')
+      .trim();
+
+    if (text) return text;
+  }
+
+  return null;
 }
 
 function getRequestId(data: CloudflareAiSuccessBody): string | undefined {
-  const id = data.result?.id ?? data.result_id;
+  const id = isRecord(data.result) ? data.result.id : data.result_id;
   return typeof id === 'string' ? id : undefined;
+}
+
+function summarizeShape(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `array(${value.length})`;
+  }
+
+  if (isRecord(value)) {
+    return `object(${Object.keys(value).slice(0, 8).join(',')})`;
+  }
+
+  return typeof value;
 }
 
 @Injectable()
@@ -89,9 +146,10 @@ export class CloudflareAiTransport implements AiTransport {
 
       const text = getResponseText(data);
       if (text === null) {
-        throw new Error(
-          `Cloudflare AI returned an unexpected response shape for model ${model}`,
-        );
+        lastError = `unexpected response shape for model ${model}: ${summarizeShape(
+          data.result,
+        )}`;
+        continue;
       }
 
       return {
