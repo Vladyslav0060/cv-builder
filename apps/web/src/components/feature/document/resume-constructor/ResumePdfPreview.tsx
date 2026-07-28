@@ -241,6 +241,7 @@ function MinimalPreview({
             resume.personalInfo.website,
             resume.personalInfo.linkedin,
             resume.personalInfo.github,
+            resume.personalInfo.upwork,
           ]
             .filter(isPresent)
             .map((item, index) => (
@@ -654,6 +655,7 @@ function ClassicPreview({
                   resume.personalInfo.website,
                   resume.personalInfo.linkedin,
                   resume.personalInfo.github,
+                  resume.personalInfo.upwork,
                 ]
                   .filter(isPresent)
                   .map((item) => (
@@ -1097,6 +1099,7 @@ function ModernPreview({
               resume.personalInfo.website,
               resume.personalInfo.linkedin,
               resume.personalInfo.github,
+              resume.personalInfo.upwork,
             ]
               .filter(isPresent)
               .map((item) => (
@@ -1547,38 +1550,47 @@ export function PreviewSurface({
     );
   }, [size.height, size.width]);
 
-  const isInsidePage = useCallback((x: number, y: number) => {
-    const pageWidth = RESUME_A4_WIDTH_PX * scale;
-    const pageHeight = RESUME_A4_HEIGHT_PX * scale;
-    const pageLeft = (size.width - pageWidth) / 2;
-    const pageTop = (size.height - pageHeight) / 2;
-    const localX = x - pageLeft;
-    const localY = y - pageTop;
+  const isInsidePage = useCallback(
+    (x: number, y: number) => {
+      const pageWidth = RESUME_A4_WIDTH_PX * scale;
+      const pageHeight = RESUME_A4_HEIGHT_PX * scale;
+      const pageLeft = (size.width - pageWidth) / 2;
+      const pageTop = (size.height - pageHeight) / 2;
+      const localX = x - pageLeft;
+      const localY = y - pageTop;
 
-    return (
-      localX >= 0 && localY >= 0 && localX <= pageWidth && localY <= pageHeight
-    );
-  }, [scale, size.height, size.width]);
+      return (
+        localX >= 0 &&
+        localY >= 0 &&
+        localX <= pageWidth &&
+        localY <= pageHeight
+      );
+    },
+    [scale, size.height, size.width],
+  );
 
   const magnifiedScale = scale * PREVIEW_MAGNIFIER_SCALE;
 
-  const updatePointer = useCallback((
-    event: ReactPointerEvent<HTMLDivElement>,
-    options?: { reset?: boolean },
-  ) => {
-    if (!hasFinePointer) return;
+  const updatePointer = useCallback(
+    (
+      event: ReactPointerEvent<HTMLDivElement>,
+      options?: { reset?: boolean },
+    ) => {
+      if (!hasFinePointer) return;
 
-    if (options?.reset) {
-      setPointer(null);
-      return;
-    }
+      if (options?.reset) {
+        setPointer(null);
+        return;
+      }
 
-    const rect = event.currentTarget.getBoundingClientRect();
-    setPointer({
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    });
-  }, [hasFinePointer]);
+      const rect = event.currentTarget.getBoundingClientRect();
+      setPointer({
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top,
+      });
+    },
+    [hasFinePointer],
+  );
 
   const magnifier = useMemo<ReactNode>(() => {
     if (!hasFinePointer || !pointer) return null;
@@ -1615,11 +1627,9 @@ export function PreviewSurface({
               width: RESUME_A4_WIDTH_PX,
               height: RESUME_A4_HEIGHT_PX,
               transform: `translate(${
-                PREVIEW_MAGNIFIER_SIZE_PX / 2 -
-                localX * PREVIEW_MAGNIFIER_SCALE
+                PREVIEW_MAGNIFIER_SIZE_PX / 2 - localX * PREVIEW_MAGNIFIER_SCALE
               }px, ${
-                PREVIEW_MAGNIFIER_SIZE_PX / 2 -
-                localY * PREVIEW_MAGNIFIER_SCALE
+                PREVIEW_MAGNIFIER_SIZE_PX / 2 - localY * PREVIEW_MAGNIFIER_SCALE
               }px) scale(${magnifiedScale})`,
               transformOrigin: "top left",
             }}

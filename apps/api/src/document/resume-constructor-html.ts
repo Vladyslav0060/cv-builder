@@ -72,6 +72,7 @@ function renderContacts(resume: ResumeData) {
     resume.personalInfo.website,
     resume.personalInfo.linkedin,
     resume.personalInfo.github,
+    resume.personalInfo.upwork,
   ].filter(Boolean) as string[];
 
   return contacts

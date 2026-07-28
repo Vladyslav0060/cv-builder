@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from 'generated/prisma/client';
+import { DocumentType } from 'generated/prisma/enums';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { GetDocumentsPreviewDto } from './dto/get-documents-preview.dto';
@@ -58,6 +59,19 @@ export class DocumentService {
     );
   }
 
+  async createResumeDocument(userId: string, title: string) {
+    return this.prisma.forUser(userId, (tx) =>
+      tx.document.create({
+        data: {
+          userId,
+          content: null,
+          title,
+          type: DocumentType.RESUME,
+        },
+      }),
+    );
+  }
+
   async updateDocumentContent(
     userId: string,
     documentId: string,
@@ -98,6 +112,7 @@ export class DocumentService {
       website: resume.personalInfo.website,
       linkedin: resume.personalInfo.linkedin,
       github: resume.personalInfo.github,
+      upwork: resume.personalInfo.upwork,
       summary: resume.summary,
       skills: resume.skills,
       languages: resume.languages ?? [],

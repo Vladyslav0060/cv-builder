@@ -81,6 +81,12 @@ export class ResumePersonalInfoDto {
   @IsUrl()
   @MaxLength(2048)
   github?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUrl()
+  @MaxLength(2048)
+  upwork?: string;
 }
 
 export class ResumeExperienceDto {

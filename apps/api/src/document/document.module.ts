@@ -7,9 +7,11 @@ import { PrismaModule } from 'src/prisma/prisma.module';
 import { UserModule } from 'src/user/user.module';
 import { AiModule } from 'src/ai/ai.module';
 import { UsageModule } from 'src/usage/usage.module';
+import { ResumeAiCreationService } from './resume-ai-creation.service';
 import { ResumeGenerationService } from './resume-generation.service';
 import { ResumeMappingService } from './resume-mapping.service';
 import { ResumePdfExportService } from './resume-pdf-export.service';
+import { ResumeUploadTextService } from './resume-upload-text.service';
 
 @Module({
   imports: [PrismaModule, UserModule, AiModule, UsageModule],
@@ -17,18 +19,22 @@ import { ResumePdfExportService } from './resume-pdf-export.service';
     DocumentService,
     DocumentApplicationService,
     DocumentCreationService,
+    ResumeAiCreationService,
     ResumeGenerationService,
     ResumeMappingService,
     ResumePdfExportService,
+    ResumeUploadTextService,
   ],
   controllers: [DocumentController],
   exports: [
     DocumentService,
     DocumentApplicationService,
     DocumentCreationService,
+    ResumeAiCreationService,
     ResumeGenerationService,
     ResumeMappingService,
     ResumePdfExportService,
+    ResumeUploadTextService,
   ],
 })
 export class DocumentModule {}

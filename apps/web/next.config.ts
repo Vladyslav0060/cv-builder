@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const API_URL = (
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5050"
@@ -10,7 +11,7 @@ const nextConfig: NextConfig = {
   },
   reactCompiler: true,
   turbopack: {
-    root: __dirname,
+    root: path.resolve(__dirname, "../.."),
   },
   async rewrites() {
     return [

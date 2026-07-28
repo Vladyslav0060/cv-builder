@@ -10,12 +10,21 @@ const clientPath = resolve(
 const source = await readFile(clientPath, 'utf8');
 const patched = source
   .replace("import { fileURLToPath } from 'node:url'\n", '')
+  .replace("import { fileURLToPath } from 'node:url';\n", '')
   .replace(
     "globalThis['__dirname'] = path.dirname(fileURLToPath(import.meta.url))",
     "globalThis['__dirname'] = __dirname",
+  )
+  .replace(
+    "globalThis['__dirname'] = path.dirname(fileURLToPath(import.meta.url));",
+    "globalThis['__dirname'] = __dirname;",
   );
 
 if (patched === source) {
+  if (source.includes("globalThis['__dirname'] = __dirname")) {
+    process.exit(0);
+  }
+
   throw new Error(`Prisma client patch did not match ${clientPath}`);
 }
 

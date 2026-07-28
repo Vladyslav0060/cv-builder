@@ -77,6 +77,7 @@ const PERSONAL_INFO_FIELDS: Array<{
   { key: "website", label: "Website" },
   { key: "linkedin", label: "LinkedIn" },
   { key: "github", label: "GitHub" },
+  { key: "upwork", label: "Upwork" },
 ];
 
 const LIST_EDITOR_CONFIGS: Array<{
@@ -206,7 +207,10 @@ const ListEditor = memo(function ListEditor({
   onChange: (next: string[]) => void;
   placeholder: string;
 }) {
-  const visibleValues = useMemo(() => (values.length ? values : [""]), [values]);
+  const visibleValues = useMemo(
+    () => (values.length ? values : [""]),
+    [values],
+  );
 
   return (
     <Card className="border-border/60 bg-card/70 shadow-sm">
@@ -632,17 +636,12 @@ function SectionCard({
 const SAVE_TOAST_ID = "resume-unsaved-changes";
 
 function LoadingBlock({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        "animate-pulse rounded-md bg-muted",
-        className,
-      )}
-    />
-  );
+  return <div className={cn("animate-pulse rounded-md bg-muted", className)} />;
 }
 
-function buildProfileResume(userProfile: NonNullable<ReturnType<typeof useEnrichedMe>["data"]>) {
+function buildProfileResume(
+  userProfile: NonNullable<ReturnType<typeof useEnrichedMe>["data"]>,
+) {
   const fullName = [userProfile.firstName, userProfile.lastName]
     .filter(Boolean)
     .join(" ");
@@ -795,15 +794,15 @@ function ResumeConstructorEditor({
     };
   }, []);
 
-  const setPersonalInfo = useCallback((
-    key: keyof ResumeData["personalInfo"],
-    value: string,
-  ) => {
-    setResume((current) => ({
-      ...current,
-      personalInfo: { ...current.personalInfo, [key]: value },
-    }));
-  }, []);
+  const setPersonalInfo = useCallback(
+    (key: keyof ResumeData["personalInfo"], value: string) => {
+      setResume((current) => ({
+        ...current,
+        personalInfo: { ...current.personalInfo, [key]: value },
+      }));
+    },
+    [],
+  );
 
   const addExperience = useCallback(() => {
     setResume((c) => ({
@@ -869,130 +868,133 @@ function ResumeConstructorEditor({
     }));
   }, []);
 
-  const sections = useMemo<SectionConfig[]>(() => [
-    {
-      key: "experience",
-      icon: <BriefcaseBusiness className="size-4" />,
-      title: "Experience",
-      description: "Highlight impact, scope, and progression.",
-      addLabel: "Add role",
-      onAdd: addExperience,
-      count: resume.experience.length,
-      children: resume.experience.map((entry) => (
-        <ResumeEntryCard
-          key={entry.id}
-          entry={entry}
-          onChange={(next) =>
-            setResume((c) => ({
-              ...c,
-              experience: updateById(c.experience, entry.id, () => next),
-            }))
-          }
-          onRemove={() =>
-            setResume((c) => ({
-              ...c,
-              experience: c.experience.filter((x) => x.id !== entry.id),
-            }))
-          }
-        />
-      )),
-    },
-    {
-      key: "projects",
-      icon: <FolderGit2 className="size-4" />,
-      title: "Projects",
-      description: "Showcase work that demonstrates real-world impact.",
-      addLabel: "Add project",
-      onAdd: addProject,
-      count: (resume.projects ?? []).length,
-      children: (resume.projects ?? []).map((entry) => (
-        <ProjectEntryCard
-          key={entry.id}
-          entry={entry}
-          onChange={(next) =>
-            setResume((c) => ({
-              ...c,
-              projects: updateById(c.projects ?? [], entry.id, () => next),
-            }))
-          }
-          onRemove={() =>
-            setResume((c) => ({
-              ...c,
-              projects: (c.projects ?? []).filter((x) => x.id !== entry.id),
-            }))
-          }
-        />
-      )),
-    },
-    {
-      key: "education",
-      title: "Education",
-      description: "Keep it short and professional.",
-      addLabel: "Add degree",
-      onAdd: addEducation,
-      count: resume.education.length,
-      children: resume.education.map((entry) => (
-        <EducationEntryCard
-          key={entry.id}
-          entry={entry}
-          onChange={(next) =>
-            setResume((c) => ({
-              ...c,
-              education: updateById(c.education, entry.id, () => next),
-            }))
-          }
-          onRemove={() =>
-            setResume((c) => ({
-              ...c,
-              education: c.education.filter((x) => x.id !== entry.id),
-            }))
-          }
-        />
-      )),
-    },
-    {
-      key: "certifications",
-      icon: <Award className="size-4" />,
-      title: "Certifications",
-      description: "Add credentials that build trust with recruiters.",
-      addLabel: "Add certification",
-      onAdd: addCertification,
-      count: (resume.certifications ?? []).length,
-      children: (resume.certifications ?? []).map((entry) => (
-        <CertificationEntryCard
-          key={entry.id}
-          entry={entry}
-          onChange={(next) =>
-            setResume((c) => ({
-              ...c,
-              certifications: updateById(
-                c.certifications ?? [],
-                entry.id,
-                () => next,
-              ),
-            }))
-          }
-          onRemove={() =>
-            setResume((c) => ({
-              ...c,
-              certifications: (c.certifications ?? []).filter(
-                (x) => x.id !== entry.id,
-              ),
-            }))
-          }
-        />
-      )),
-    },
-  ], [
-    addCertification,
-    addEducation,
-    addExperience,
-    addProject,
-    resume.certifications,
-    resume.education,
-    resume.experience,
-    resume.projects,
-  ]);
+  const sections = useMemo<SectionConfig[]>(
+    () => [
+      {
+        key: "experience",
+        icon: <BriefcaseBusiness className="size-4" />,
+        title: "Experience",
+        description: "Highlight impact, scope, and progression.",
+        addLabel: "Add role",
+        onAdd: addExperience,
+        count: resume.experience.length,
+        children: resume.experience.map((entry) => (
+          <ResumeEntryCard
+            key={entry.id}
+            entry={entry}
+            onChange={(next) =>
+              setResume((c) => ({
+                ...c,
+                experience: updateById(c.experience, entry.id, () => next),
+              }))
+            }
+            onRemove={() =>
+              setResume((c) => ({
+                ...c,
+                experience: c.experience.filter((x) => x.id !== entry.id),
+              }))
+            }
+          />
+        )),
+      },
+      {
+        key: "projects",
+        icon: <FolderGit2 className="size-4" />,
+        title: "Projects",
+        description: "Showcase work that demonstrates real-world impact.",
+        addLabel: "Add project",
+        onAdd: addProject,
+        count: (resume.projects ?? []).length,
+        children: (resume.projects ?? []).map((entry) => (
+          <ProjectEntryCard
+            key={entry.id}
+            entry={entry}
+            onChange={(next) =>
+              setResume((c) => ({
+                ...c,
+                projects: updateById(c.projects ?? [], entry.id, () => next),
+              }))
+            }
+            onRemove={() =>
+              setResume((c) => ({
+                ...c,
+                projects: (c.projects ?? []).filter((x) => x.id !== entry.id),
+              }))
+            }
+          />
+        )),
+      },
+      {
+        key: "education",
+        title: "Education",
+        description: "Keep it short and professional.",
+        addLabel: "Add degree",
+        onAdd: addEducation,
+        count: resume.education.length,
+        children: resume.education.map((entry) => (
+          <EducationEntryCard
+            key={entry.id}
+            entry={entry}
+            onChange={(next) =>
+              setResume((c) => ({
+                ...c,
+                education: updateById(c.education, entry.id, () => next),
+              }))
+            }
+            onRemove={() =>
+              setResume((c) => ({
+                ...c,
+                education: c.education.filter((x) => x.id !== entry.id),
+              }))
+            }
+          />
+        )),
+      },
+      {
+        key: "certifications",
+        icon: <Award className="size-4" />,
+        title: "Certifications",
+        description: "Add credentials that build trust with recruiters.",
+        addLabel: "Add certification",
+        onAdd: addCertification,
+        count: (resume.certifications ?? []).length,
+        children: (resume.certifications ?? []).map((entry) => (
+          <CertificationEntryCard
+            key={entry.id}
+            entry={entry}
+            onChange={(next) =>
+              setResume((c) => ({
+                ...c,
+                certifications: updateById(
+                  c.certifications ?? [],
+                  entry.id,
+                  () => next,
+                ),
+              }))
+            }
+            onRemove={() =>
+              setResume((c) => ({
+                ...c,
+                certifications: (c.certifications ?? []).filter(
+                  (x) => x.id !== entry.id,
+                ),
+              }))
+            }
+          />
+        )),
+      },
+    ],
+    [
+      addCertification,
+      addEducation,
+      addExperience,
+      addProject,
+      resume.certifications,
+      resume.education,
+      resume.experience,
+      resume.projects,
+    ],
+  );
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-clip">
@@ -1190,8 +1192,11 @@ function ResumeConstructorEditor({
   );
 }
 
-export function ResumeConstructor({ documentId }: { documentId?: string } = {}) {
+export function ResumeConstructor({
+  documentId,
+}: { documentId?: string } = {}) {
   const { data: existingResume } = useGetResume(documentId ?? "");
+  console.log({ existingResume });
   const { data: userProfile } = useEnrichedMe();
 
   const initialPayload = useMemo<ResumeExportPayload | null>(() => {

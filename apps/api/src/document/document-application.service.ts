@@ -7,14 +7,20 @@ import {
   CreateDocumentDto,
   CreateDocumentDtoCreationMode,
 } from './dto/create-document.dto';
+import { CreateAiResumeDto } from './dto/create-ai-resume.dto';
 import { GetDocumentDto } from './dto/get-document.dto';
 import { GetDocumentsPreviewDto } from './dto/get-documents-preview.dto';
 import { ResumeExportPayloadDto } from './dto/resume-data.dto';
 import { DocumentCreationService } from './document-creation.service';
 import { DocumentService } from './document.service';
+import {
+  ResumeUploadFile,
+  ResumeUploadTextService,
+} from './resume-upload-text.service';
 import { toGetDocumentDto } from './mappers/get-document.mapper';
 import { toGetDocumentsPreviewDto } from './mappers/get-documents.mapper';
 import { toResumeExportPayload } from './mappers/resume.mapper';
+import { ResumeAiCreationService } from './resume-ai-creation.service';
 import { ResumeGenerationService } from './resume-generation.service';
 import { ResumeMappingService } from './resume-mapping.service';
 import { ResumePdfExportService } from './resume-pdf-export.service';
@@ -25,11 +31,44 @@ export class DocumentApplicationService {
     private readonly documentService: DocumentService,
     private readonly userService: UserService,
     private readonly documentCreationService: DocumentCreationService,
+    private readonly resumeAiCreationService: ResumeAiCreationService,
     private readonly resumeGenerationService: ResumeGenerationService,
     private readonly resumeMappingService: ResumeMappingService,
     private readonly resumePdfExportService: ResumePdfExportService,
+    private readonly resumeUploadTextService: ResumeUploadTextService,
     private readonly usageQuotaService: UsageQuotaService,
   ) {}
+
+  async createAiResume(
+    userId: string,
+    body: CreateAiResumeDto,
+    file?: ResumeUploadFile,
+  ): Promise<GetDocumentDto> {
+    await this.usageQuotaService.consumeQuota(userId, 'CREATE');
+
+    const previousResumeText =
+      await this.resumeUploadTextService.extractText(file);
+    const resumePayload = await this.resumeAiCreationService.generateResume(
+      body,
+      previousResumeText,
+    );
+    if (!resumePayload.resume?.personalInfo) {
+      throw new Error('AI resume generation returned an invalid resume shape');
+    }
+
+    const title =
+      resumePayload.resume.personalInfo.title ||
+      body.target?.split('\n').find(Boolean)?.trim() ||
+      'AI Resume';
+    const document = await this.documentService.createResumeDocument(
+      userId,
+      title,
+    );
+
+    await this.documentService.upsertResume(userId, document.id, resumePayload);
+
+    return toGetDocumentDto(document);
+  }
 
   async createDocument(
     userId: string,
@@ -67,11 +106,9 @@ export class DocumentApplicationService {
               company,
               description,
             })
-            .catch((err) => {
-              console.error(
-                '[createDocument] generateResume failed:',
-                err?.message ?? err,
-              );
+            .catch((err: unknown) => {
+              const message = err instanceof Error ? err.message : err;
+              console.error('[createDocument] generateResume failed:', message);
               return null as AiResumeResult | null;
             })
         : Promise.resolve(null as AiResumeResult | null),
