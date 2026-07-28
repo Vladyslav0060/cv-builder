@@ -153,7 +153,7 @@ const DocumentWizardContent = memo(function DocumentWizardContent({
   );
 
   return (
-    <div className="relative flex w-full min-w-0 max-w-3xl flex-col gap-4">
+    <div className="relative flex w-full min-w-0 flex-col gap-4">
       <Card className="border-border/60 bg-card/85 shadow-sm backdrop-blur">
         <CardHeader className="space-y-3 border-b border-border/60 pb-5">
           <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:gap-4">

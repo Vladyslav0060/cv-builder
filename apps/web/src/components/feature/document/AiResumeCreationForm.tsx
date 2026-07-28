@@ -154,7 +154,7 @@ export function AiResumeCreationForm() {
                 onChange={(event) => setIntroduction(event.target.value)}
                 disabled={isPending}
                 className="min-h-24"
-                placeholder="I am Vlad, a frontend engineer based in Kyiv. I build React and Next.js products, care about clean UI, and want to position myself for senior product engineering roles."
+                placeholder="I am John Doe, a frontend engineer based in Kyiv. I build React and Next.js products, care about clean UI, and want to position myself for senior product engineering roles."
               />
             </FieldContent>
           </Field>
@@ -187,7 +187,7 @@ export function AiResumeCreationForm() {
 
           <div
             className={cn(
-              "rounded-lg border border-dashed border-border/80 bg-muted/20 p-4",
+              "rounded-lg border border-dashed border-border/80 bg-muted/20 p-4 mb-4",
               file && "border-emerald-500/50 bg-emerald-500/5",
             )}
           >
@@ -198,7 +198,7 @@ export function AiResumeCreationForm() {
                 </div>
                 <div className="min-w-0 space-y-1">
                   <p className="text-sm font-medium">
-                    {selectedFileLabel ?? "Old CV"}
+                    {selectedFileLabel ?? "Old CV (optional)"}
                   </p>
                   <p className="text-xs leading-5 text-muted-foreground">
                     PDF, DOCX, TXT, or Markdown. The AI will reuse facts and

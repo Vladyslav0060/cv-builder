@@ -142,13 +142,101 @@ describe('SubscriptionService', () => {
         }),
       );
     });
+
+    it('updates an existing Stripe subscription instead of creating checkout', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        email: 'user@example.com',
+        stripeCustomerId: 'cus_existing',
+      });
+      prisma.subscription.findUnique.mockResolvedValue({
+        stripeSubscriptionId: 'sub_existing',
+        status: SubscriptionStatus.active,
+      });
+      stripeSubscriptionsRetrieve.mockResolvedValue({
+        id: 'sub_existing',
+        status: 'active',
+        cancel_at_period_end: false,
+        items: {
+          data: [
+            {
+              id: 'si_existing',
+              current_period_end: 1750000000,
+              price: { id: 'price_pro_month' },
+            },
+          ],
+        },
+      });
+      stripeSubscriptionsUpdate.mockResolvedValue({
+        id: 'sub_existing',
+        status: 'active',
+        cancel_at_period_end: false,
+        items: {
+          data: [
+            {
+              id: 'si_existing',
+              current_period_end: 1760000000,
+              price: { id: 'price_max_month' },
+            },
+          ],
+        },
+      });
+
+      const result = await service.createCheckoutSession(
+        'user_1',
+        'price_max_month',
+      );
+
+      expect(result.url).toBeNull();
+      expect(stripeCheckoutSessionsCreate).not.toHaveBeenCalled();
+      expect(stripeSubscriptionsUpdate).toHaveBeenCalledWith('sub_existing', {
+        cancel_at_period_end: false,
+        items: [{ id: 'si_existing', price: 'price_max_month' }],
+        proration_behavior: 'create_prorations',
+      });
+      expect(prisma.subscription.update).toHaveBeenCalledWith({
+        where: { userId: 'user_1' },
+        data: {
+          stripeSubscriptionId: 'sub_existing',
+          status: SubscriptionStatus.active,
+          currentPeriodEnd: new Date(1760000000 * 1000),
+          cancelAtPeriodEnd: false,
+          priceId: 'price_max_month',
+          tier: Tier.max,
+        },
+      });
+    });
+
+    it('throws when the existing Stripe subscription has no item to update', async () => {
+      prisma.user.findUnique.mockResolvedValue({
+        email: 'user@example.com',
+        stripeCustomerId: 'cus_existing',
+      });
+      prisma.subscription.findUnique.mockResolvedValue({
+        stripeSubscriptionId: 'sub_existing',
+        status: SubscriptionStatus.active,
+      });
+      stripeSubscriptionsRetrieve.mockResolvedValue({
+        id: 'sub_existing',
+        status: 'active',
+        cancel_at_period_end: false,
+        items: { data: [] },
+      });
+
+      await expect(
+        service.createCheckoutSession('user_1', 'price_max_month'),
+      ).rejects.toThrow('Subscription item not found');
+
+      expect(stripeSubscriptionsUpdate).not.toHaveBeenCalled();
+      expect(stripeCheckoutSessionsCreate).not.toHaveBeenCalled();
+    });
   });
 
   describe('checkout.session.completed', () => {
-    it('upserts the subscription and stores the stripeCustomerId', async () => {
+    it('upserts the user subscription and stores the stripeCustomerId', async () => {
       stripeSubscriptionsRetrieve.mockResolvedValue({
         id: 'sub_123',
         status: 'active',
+        cancel_at_period_end: false,
         items: {
           data: [
             {
@@ -187,11 +275,98 @@ describe('SubscriptionService', () => {
           tier: Tier.pro,
         },
         update: {
+          stripeSubscriptionId: 'sub_123',
           status: SubscriptionStatus.active,
           currentPeriodEnd: new Date(1750000000 * 1000),
+          cancelAtPeriodEnd: false,
+          priceId: 'price_pro_month',
+          tier: Tier.pro,
         },
-        where: { stripeSubscriptionId: 'sub_123' },
+        where: { userId: 'user_1' },
       });
+    });
+
+    it('updates the existing user subscription when checkout creates a new Stripe subscription', async () => {
+      stripeSubscriptionsRetrieve.mockResolvedValue({
+        id: 'sub_replacement',
+        status: 'active',
+        cancel_at_period_end: false,
+        items: {
+          data: [
+            {
+              current_period_end: 1760000000,
+              price: { id: 'price_max_month' },
+            },
+          ],
+        },
+      });
+
+      const event = {
+        id: 'evt_plan_change',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            client_reference_id: 'user_1',
+            customer: 'cus_123',
+            subscription: 'sub_replacement',
+          },
+        },
+      } as unknown as Stripe.Event;
+
+      await service.handleWebhookEvent(event);
+
+      expect(prisma.subscription.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 'user_1' },
+          update: {
+            stripeSubscriptionId: 'sub_replacement',
+            status: SubscriptionStatus.active,
+            currentPeriodEnd: new Date(1760000000 * 1000),
+            cancelAtPeriodEnd: false,
+            priceId: 'price_max_month',
+            tier: Tier.max,
+          },
+        }),
+      );
+    });
+
+    it('propagates non-webhook unique constraint errors', async () => {
+      const duplicateSubscriptionError = Object.assign(
+        new Error('Unique constraint failed'),
+        {
+          code: 'P2002',
+        },
+      );
+      stripeSubscriptionsRetrieve.mockResolvedValue({
+        id: 'sub_123',
+        status: 'active',
+        cancel_at_period_end: false,
+        items: {
+          data: [
+            {
+              current_period_end: 1750000000,
+              price: { id: 'price_pro_month' },
+            },
+          ],
+        },
+      });
+      prisma.subscription.upsert.mockRejectedValue(duplicateSubscriptionError);
+
+      const event = {
+        id: 'evt_subscription_unique_error',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            client_reference_id: 'user_1',
+            customer: 'cus_123',
+            subscription: 'sub_123',
+          },
+        },
+      } as unknown as Stripe.Event;
+
+      await expect(service.handleWebhookEvent(event)).rejects.toThrow(
+        'Unique constraint failed',
+      );
     });
 
     it('does nothing when client_reference_id is missing', async () => {
@@ -244,7 +419,7 @@ describe('SubscriptionService', () => {
   });
 
   describe('customer.subscription.updated', () => {
-    it('updates status and currentPeriodEnd by stripeSubscriptionId', async () => {
+    it('updates subscription details by stripeSubscriptionId', async () => {
       const event = {
         id: 'evt_subscription_updated',
         type: 'customer.subscription.updated',
@@ -269,9 +444,12 @@ describe('SubscriptionService', () => {
 
       expect(prisma.subscription.update).toHaveBeenCalledWith({
         data: {
+          stripeSubscriptionId: 'sub_123',
           status: SubscriptionStatus.past_due,
           currentPeriodEnd: new Date(1750000000 * 1000),
           cancelAtPeriodEnd: false,
+          priceId: 'price_pro_month',
+          tier: Tier.pro,
         },
         where: { stripeSubscriptionId: 'sub_123' },
       });
