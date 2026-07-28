@@ -34,6 +34,7 @@ import { WizardStepPanel } from "./new-document/wizard-step-panel";
 import { DocumentAiLoader } from "./new-document/document-ai-loader";
 import { buildWizardSteps } from "./new-document/wizard-steps";
 import { AiResumeCreationForm } from "./AiResumeCreationForm";
+import { AiCoverLetterCreationForm } from "./AiCoverLetterCreationForm";
 
 function toErrorPath(path: Array<string | number | symbol>) {
   const first = path[0];
@@ -267,10 +268,14 @@ export const NewDocumentForm = () => {
       <Tabs defaultValue="ai" className="gap-4">
         <TabsList className="w-full justify-start sm:w-fit">
           <TabsTrigger value="ai">AI resume</TabsTrigger>
+          <TabsTrigger value="cover-letter">AI cover letter</TabsTrigger>
           <TabsTrigger value="manual">Manual setup</TabsTrigger>
         </TabsList>
         <TabsContent value="ai">
           <AiResumeCreationForm />
+        </TabsContent>
+        <TabsContent value="cover-letter">
+          <AiCoverLetterCreationForm />
         </TabsContent>
         <TabsContent value="manual">
           <ManualNewDocumentWizard />

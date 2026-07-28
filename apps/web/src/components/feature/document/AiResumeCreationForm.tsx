@@ -34,6 +34,15 @@ const ACCEPTED_FILE_TYPES = [
   "text/markdown",
 ];
 
+const DEMO_RESUME_VALUES = {
+  introduction:
+    "I am Alex Morgan, a senior frontend engineer based in Austin, Texas. I build React, Next.js, and TypeScript products for SaaS teams, with a focus on clean UX, performance, accessibility, and maintainable component systems.",
+  background:
+    "8 years of frontend and product engineering experience. Led the rebuild of a B2B analytics dashboard from a legacy SPA to Next.js, improving page load speed and reducing support tickets around reporting workflows. Built reusable design-system components, complex forms, role-based dashboards, and Stripe billing flows. Strong with React, Next.js, TypeScript, Tailwind CSS, TanStack Query, GraphQL, REST APIs, Playwright, Jest, Storybook, Prisma, PostgreSQL, and CI/CD. Mentored two junior engineers, partnered closely with product/design, and shipped customer-facing features for subscription, onboarding, account settings, and admin tooling. Education: BS Computer Science, University of Texas. Languages: English and Spanish.",
+  target:
+    "Senior Frontend Engineer at a SaaS company. The role needs someone to own React/Next.js features, improve frontend architecture, collaborate with product and design, maintain high-quality UI, write tests, and ship polished user workflows for business customers.",
+};
+
 function formatFileSize(size: number) {
   return `${(size / 1024 / 1024).toFixed(1)} MB`;
 }
@@ -85,6 +94,14 @@ export function AiResumeCreationForm() {
     setFile(nextFile);
   };
 
+  const handleAutofill = () => {
+    setIntroduction(DEMO_RESUME_VALUES.introduction);
+    setBackground(DEMO_RESUME_VALUES.background);
+    setTarget(DEMO_RESUME_VALUES.target);
+    setFormError("");
+    setFileError("");
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError("");
@@ -117,9 +134,22 @@ export function AiResumeCreationForm() {
               <Sparkles className="size-6" />
             </div>
             <div className="space-y-2">
-              <CardTitle className="text-2xl leading-tight sm:text-3xl">
-                AI resume builder
-              </CardTitle>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <CardTitle className="text-2xl leading-tight sm:text-3xl">
+                  AI resume builder
+                </CardTitle>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={handleAutofill}
+                  className="w-fit"
+                >
+                  <Sparkles className="size-4" />
+                  Autofill
+                </Button>
+              </div>
               <CardDescription className="max-w-2xl text-sm leading-6 sm:text-base">
                 Start with a few notes. The resume opens in the editor with a
                 PDF preview ready for cleanup.

@@ -7,6 +7,7 @@ import {
   CreateDocumentDto,
   CreateDocumentDtoCreationMode,
 } from './dto/create-document.dto';
+import { CreateAiCoverLetterDto } from './dto/create-ai-cover-letter.dto';
 import { CreateAiResumeDto } from './dto/create-ai-resume.dto';
 import { GetDocumentDto } from './dto/get-document.dto';
 import { GetDocumentsPreviewDto } from './dto/get-documents-preview.dto';
@@ -66,6 +67,33 @@ export class DocumentApplicationService {
     );
 
     await this.documentService.upsertResume(userId, document.id, resumePayload);
+
+    return toGetDocumentDto(document);
+  }
+
+  async createAiCoverLetter(
+    userId: string,
+    body: CreateAiCoverLetterDto,
+  ): Promise<GetDocumentDto> {
+    await this.usageQuotaService.consumeQuota(userId, 'CREATE');
+
+    const content =
+      await this.documentCreationService.generateAiCoverLetter(body);
+    if (!content) {
+      throw new Error('AI cover letter generation returned empty content');
+    }
+
+    const title =
+      body.proposal
+        .split('\n')
+        .map((line) => line.trim())
+        .find(Boolean)
+        ?.slice(0, 120) || 'AI Cover Letter';
+    const document = await this.documentService.createCoverLetterDocument(
+      userId,
+      title,
+      content,
+    );
 
     return toGetDocumentDto(document);
   }
