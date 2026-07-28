@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AiService } from 'src/ai/ai.service';
 import {
   CreateDocumentDto,
@@ -11,7 +12,10 @@ function getDocumentTypeLabel(type: CreateDocumentDto['type']) {
 
 @Injectable()
 export class DocumentCreationService {
-  constructor(private readonly aiService: AiService) {}
+  constructor(
+    private readonly aiService: AiService,
+    private readonly cfg: ConfigService,
+  ) {}
 
   async generateContent(
     body: CreateDocumentDto,
@@ -29,9 +33,10 @@ export class DocumentCreationService {
       return null;
     }
 
-    const maxOutputTokens = process.env.MAX_OUTPUT_TOKENS
-      ? Number(process.env.MAX_OUTPUT_TOKENS)
-      : 600;
+    const maxOutputTokens =
+      this.cfg.get<number>('ai.coverLetterMaxOutputTokens') ??
+      this.cfg.get<number>('ai.maxOutputTokens') ??
+      600;
     const systemPrompt =
       creationMode === CreateDocumentDtoCreationMode.ACCOUNT
         ? `You are an expert career coach. Write a professional ${getDocumentTypeLabel(

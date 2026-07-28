@@ -28,6 +28,13 @@ export function getTierByPriceId(
   throw new Error(`Unknown priceId: ${priceId}`);
 }
 
+export function isAllowedPriceId(
+  priceId: string,
+  prices: StripePriceConfig,
+): boolean {
+  return Object.values(prices).includes(priceId);
+}
+
 export function extractSubscriptionFields(subscription: Stripe.Subscription): {
   id: string;
   status: Stripe.Subscription['status'];
