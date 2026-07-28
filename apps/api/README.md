@@ -61,6 +61,12 @@ $ npm run test:cov
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
 
+### Stripe configuration
+
+Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_MONTHLY_PRICE_ID`, `STRIPE_PRO_6M_PRICE_ID`, `STRIPE_MAX_MONTHLY_PRICE_ID`, and `STRIPE_MAX_6M_PRICE_ID` in your deployment secret store. Prefer a Stripe restricted API key (`rk_...`) for `STRIPE_SECRET_KEY` instead of a full secret key (`sk_...`). The key should only allow the Customer, Checkout Session, Price, and Subscription operations used by this API.
+
+Use separate Stripe keys and webhook secrets for development, staging, and production. Do not expose either the restricted API key or webhook signing secret to the web app.
+
 If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
 
 ```bash

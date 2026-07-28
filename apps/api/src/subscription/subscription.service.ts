@@ -8,7 +8,11 @@ import {
 import { ConfigType } from '@nestjs/config';
 import { SubscriptionStatus, Tier } from 'generated/prisma/enums';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { extractSubscriptionFields, getTierByPriceId } from './utils';
+import {
+  extractSubscriptionFields,
+  getTierByPriceId,
+  isAllowedPriceId,
+} from './utils';
 import { TIER_DAILY_LIMITS } from 'src/usage/usage-limits';
 import { UsageQuotaService } from 'src/usage/usage-quota.service';
 import { PlanDto } from './dto/get-plans.dto';
@@ -36,9 +40,16 @@ export class SubscriptionService {
     userId: string,
     priceId: string,
   ): Promise<Stripe.Checkout.Session> {
+    if (!isAllowedPriceId(priceId, this.stripeCfg.prices)) {
+      throw new BadRequestException('Unknown subscription price');
+    }
+
+    const customerId = await this.getOrCreateStripeCustomer(userId);
+
     const session = await this.stripe.checkout.sessions.create({
       client_reference_id: userId,
-      success_url: `${this.web.baseUrl}/checkout/success`,
+      customer: customerId,
+      success_url: `${this.web.baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${this.web.baseUrl}/checkout/cancel`,
       line_items: [
         {
@@ -49,6 +60,36 @@ export class SubscriptionService {
       mode: 'subscription',
     });
     return session;
+  }
+
+  private async getOrCreateStripeCustomer(userId: string): Promise<string> {
+    const user = await this.prisma.forUser(userId, (tx) =>
+      tx.user.findUnique({
+        where: { id: userId },
+        select: { email: true, stripeCustomerId: true },
+      }),
+    );
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (user.stripeCustomerId) {
+      return user.stripeCustomerId;
+    }
+
+    const customer = await this.stripe.customers.create({
+      email: user.email,
+      metadata: { userId },
+    });
+
+    await this.prisma.forUser(userId, (tx) =>
+      tx.user.update({
+        where: { id: userId },
+        data: { stripeCustomerId: customer.id },
+      }),
+    );
+
+    return customer.id;
   }
 
   async getPlans(): Promise<PlanDto[]> {
@@ -155,78 +196,97 @@ export class SubscriptionService {
   }
 
   async handleWebhookEvent(event: Stripe.Event) {
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const {
-          client_reference_id,
-          customer: stripeCustomerId,
-          subscription,
-        } = event.data.object;
-        if (!client_reference_id) return;
-
-        const stripeSubscription = await this.stripe.subscriptions.retrieve(
-          subscription as string,
-        );
-
-        const { current_period_end, priceId } =
-          extractSubscriptionFields(stripeSubscription);
-
-        const tier = getTierByPriceId(priceId, this.stripeCfg.prices);
-
-        await this.prisma.forSystem(async (tx) => {
-          await tx.user.update({
-            data: { stripeCustomerId: stripeCustomerId as string },
-            where: { id: client_reference_id },
-          });
-
-          await tx.subscription.upsert({
-            create: {
-              userId: client_reference_id,
-              stripeSubscriptionId: stripeSubscription.id,
-              status: stripeSubscription.status,
-              currentPeriodEnd: new Date(current_period_end * 1000),
-              priceId,
-              tier,
-            },
-            update: {
-              status: stripeSubscription.status,
-              currentPeriodEnd: new Date(current_period_end * 1000),
-            },
-            where: { stripeSubscriptionId: stripeSubscription.id },
-          });
+    try {
+      await this.prisma.forSystem(async (tx) => {
+        await tx.stripeWebhookEvent.create({
+          data: {
+            id: event.id,
+            type: event.type,
+          },
         });
-        break;
+
+        switch (event.type) {
+          case 'checkout.session.completed': {
+            const {
+              client_reference_id,
+              customer: stripeCustomerId,
+              subscription,
+            } = event.data.object;
+            if (!client_reference_id) return;
+
+            const stripeSubscription = await this.stripe.subscriptions.retrieve(
+              subscription as string,
+            );
+
+            const { current_period_end, priceId } =
+              extractSubscriptionFields(stripeSubscription);
+
+            const tier = getTierByPriceId(priceId, this.stripeCfg.prices);
+
+            await tx.user.update({
+              data: { stripeCustomerId: stripeCustomerId as string },
+              where: { id: client_reference_id },
+            });
+
+            await tx.subscription.upsert({
+              create: {
+                userId: client_reference_id,
+                stripeSubscriptionId: stripeSubscription.id,
+                status: stripeSubscription.status,
+                currentPeriodEnd: new Date(current_period_end * 1000),
+                priceId,
+                tier,
+              },
+              update: {
+                status: stripeSubscription.status,
+                currentPeriodEnd: new Date(current_period_end * 1000),
+              },
+              where: { stripeSubscriptionId: stripeSubscription.id },
+            });
+            break;
+          }
+          case 'customer.subscription.updated': {
+            const stripeSubscription = event.data.object;
+            const { current_period_end } =
+              extractSubscriptionFields(stripeSubscription);
+            await tx.subscription.update({
+              data: {
+                status: stripeSubscription.status,
+                currentPeriodEnd: new Date(current_period_end * 1000),
+                cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+              },
+              where: {
+                stripeSubscriptionId: stripeSubscription.id,
+              },
+            });
+            break;
+          }
+          case 'customer.subscription.deleted': {
+            const stripeSubscription = event.data.object;
+            await tx.subscription.update({
+              data: { status: SubscriptionStatus.canceled },
+              where: {
+                stripeSubscriptionId: stripeSubscription.id,
+              },
+            });
+            break;
+          }
+        }
+      });
+    } catch (error) {
+      if (this.isUniqueConstraintError(error)) {
+        return;
       }
-      case 'customer.subscription.updated': {
-        const stripeSubscription = event.data.object;
-        const { current_period_end } =
-          extractSubscriptionFields(stripeSubscription);
-        await this.prisma.forSystem((tx) =>
-          tx.subscription.update({
-            data: {
-              status: stripeSubscription.status,
-              currentPeriodEnd: new Date(current_period_end * 1000),
-              cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
-            },
-            where: {
-              stripeSubscriptionId: stripeSubscription.id,
-            },
-          }),
-        );
-        break;
-      }
-      case 'customer.subscription.deleted': {
-        const stripeSubscription = event.data.object;
-        await this.prisma.forSystem((tx) =>
-          tx.subscription.update({
-            data: { status: SubscriptionStatus.canceled },
-            where: {
-              stripeSubscriptionId: stripeSubscription.id,
-            },
-          }),
-        );
-        break;
-      }
+      throw error;
     }
+  }
+
+  private isUniqueConstraintError(error: unknown): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      error.code === 'P2002'
+    );
   }
 }
