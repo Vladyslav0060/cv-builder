@@ -131,6 +131,7 @@ function formatContacts(resume: ResumeData) {
     personalInfo.website,
     personalInfo.linkedin,
     personalInfo.github,
+    personalInfo.upwork,
   ].filter(Boolean) as string[];
 }
 
@@ -1140,7 +1141,11 @@ function MinimalTemplate({
           <View style={styles.section}>
             <MinimalSectionHeader styles={styles} label="Skills" />
             {renderSkills(
-              { chipWrap: styles.chipWrap, chip: styles.chip, chipText: styles.chipText },
+              {
+                chipWrap: styles.chipWrap,
+                chip: styles.chip,
+                chipText: styles.chipText,
+              },
               resume.skills,
               "chips",
             )}
@@ -1151,7 +1156,11 @@ function MinimalTemplate({
           <View style={styles.section}>
             <MinimalSectionHeader styles={styles} label="Languages" />
             {renderSkills(
-              { chipWrap: styles.chipWrap, chip: styles.chip, chipText: styles.chipText },
+              {
+                chipWrap: styles.chipWrap,
+                chip: styles.chip,
+                chipText: styles.chipText,
+              },
               resume.languages,
               "chips",
             )}

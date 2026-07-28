@@ -112,6 +112,7 @@ export class DocumentService {
       website: resume.personalInfo.website,
       linkedin: resume.personalInfo.linkedin,
       github: resume.personalInfo.github,
+      upwork: resume.personalInfo.upwork,
       summary: resume.summary,
       skills: resume.skills,
       languages: resume.languages ?? [],

@@ -7,6 +7,7 @@ export type ResumePersonalInfo = {
   website?: string;
   linkedin?: string;
   github?: string;
+  upwork?: string;
 };
 
 export type ResumeExperience = {
@@ -101,7 +102,8 @@ export const resumeTemplates: ResumeTemplateOption[] = [
   {
     id: "modern",
     label: "Modern editorial",
-    description: "Airier layout with framed sections and a stronger visual hierarchy.",
+    description:
+      "Airier layout with framed sections and a stronger visual hierarchy.",
   },
   {
     id: "minimal",
@@ -204,6 +206,7 @@ export const defaultResumeData: ResumeData = {
     website: "alexjohnson.design",
     linkedin: "linkedin.com/in/alexjohnson",
     github: "github.com/alexjohnson",
+    upwork: "upwork.com/freelancers/alexjohnson",
   },
   summary:
     "Product designer with 8+ years of experience shaping end-to-end digital products, design systems, and customer-facing experiences for B2B and consumer platforms.",

@@ -1,12 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { AiGeneratedResumeResult, AiService } from 'src/ai/ai.service';
+import { AiResumeEditorDraft, AiService } from 'src/ai/ai.service';
 import {
   ResumeCertification,
+  ResumeColorSchemeId,
   ResumeData,
   ResumeEducation,
   ResumeExperience,
   ResumeExportPayload,
   ResumeProject,
+  ResumeTemplateId,
 } from '../shared/resume-constructor-data';
 import { CreateAiResumeDto } from './dto/create-ai-resume.dto';
 
@@ -30,6 +32,22 @@ function cleanStringList(value: unknown, limit: number) {
     .slice(0, limit);
 }
 
+const RESUME_TEMPLATES = new Set<ResumeTemplateId>([
+  'classic',
+  'modern',
+  'minimal',
+]);
+const RESUME_COLOR_SCHEMES = new Set<ResumeColorSchemeId>([
+  'slate',
+  'forest',
+  'wine',
+  'amber',
+  'orchid',
+  'graphite',
+  'teal',
+  'rose',
+]);
+
 type ContactHints = {
   fullName?: string;
   email?: string;
@@ -39,6 +57,28 @@ type ContactHints = {
   linkedin?: string;
   github?: string;
   upwork?: string;
+};
+
+function normalizeTemplate(value: unknown): ResumeTemplateId {
+  const template = cleanText(value);
+  return RESUME_TEMPLATES.has(template as ResumeTemplateId)
+    ? (template as ResumeTemplateId)
+    : 'modern';
+}
+
+function normalizeColorScheme(value: unknown): ResumeColorSchemeId {
+  const colorScheme = cleanText(value);
+  return RESUME_COLOR_SCHEMES.has(colorScheme as ResumeColorSchemeId)
+    ? (colorScheme as ResumeColorSchemeId)
+    : 'teal';
+}
+
+type LegacyAiPersonalInfo = {
+  personalInfo?: Partial<ContactHints> & {
+    title?: string;
+  };
+  title?: string;
+  summary?: string;
 };
 
 const URL_PATTERN =
@@ -294,7 +334,7 @@ function normalizeSkills(value: unknown, sourceText: string, limit = 24) {
 }
 
 function normalizeExperience(
-  value: AiGeneratedResumeResult['experience'],
+  value: Partial<AiResumeEditorDraft>['experience'],
 ): ResumeExperience[] {
   if (!Array.isArray(value)) return [];
 
@@ -328,7 +368,7 @@ function normalizeExperience(
 }
 
 function normalizeEducation(
-  value: AiGeneratedResumeResult['education'],
+  value: Partial<AiResumeEditorDraft>['education'],
 ): ResumeEducation[] {
   if (!Array.isArray(value)) return [];
 
@@ -356,7 +396,7 @@ function normalizeEducation(
 }
 
 function normalizeProjects(
-  value: AiGeneratedResumeResult['projects'],
+  value: Partial<AiResumeEditorDraft>['projects'],
 ): ResumeProject[] {
   if (!Array.isArray(value)) return [];
 
@@ -453,7 +493,7 @@ function extractCertificationHints(
 }
 
 function normalizeCertifications(
-  value: AiGeneratedResumeResult['certifications'],
+  value: Partial<AiResumeEditorDraft>['certifications'],
   previousResumeText = '',
 ): ResumeCertification[] {
   const source = Array.isArray(value) ? value : [];
@@ -545,11 +585,18 @@ function buildFallbackExperience(body: CreateAiResumeDto): ResumeExperience[] {
 }
 
 function toResumePayload(
-  result: AiGeneratedResumeResult,
+  result: Partial<AiResumeEditorDraft>,
   body: CreateAiResumeDto,
   previousResumeText: string,
 ): ResumeExportPayload {
-  const personalInfo = result.personalInfo ?? {};
+  const legacy = result as Partial<AiResumeEditorDraft> & LegacyAiPersonalInfo;
+  const profile =
+    result.profile ??
+    ({} as Partial<NonNullable<AiResumeEditorDraft['profile']>>);
+  const contact =
+    result.contact ??
+    ({} as Partial<NonNullable<AiResumeEditorDraft['contact']>>);
+  const legacyPersonalInfo = legacy.personalInfo ?? {};
   const manualText = [body.introduction, body.background, body.target]
     .filter(Boolean)
     .join('\n');
@@ -559,15 +606,17 @@ function toResumePayload(
   };
   const uploadContactHints = extractContactHints(previousResumeText);
   const title =
-    cleanText(personalInfo.title) ||
-    cleanText(result.title) ||
+    cleanText(profile.title) ||
+    cleanText(legacyPersonalInfo.title) ||
+    cleanText(legacy.title) ||
     buildFallbackTitle(body.target);
   const sourceText = [
     body.introduction,
     body.background,
     body.target,
     previousResumeText,
-    result.summary,
+    profile.summary,
+    legacy.summary,
   ]
     .filter(Boolean)
     .join('\n');
@@ -577,61 +626,80 @@ function toResumePayload(
     personalInfo: {
       fullName:
         manualContactHints.fullName ||
-        cleanText(personalInfo.fullName) ||
+        cleanText(profile.fullName) ||
+        cleanText(legacyPersonalInfo.fullName) ||
         uploadContactHints.fullName ||
         buildFallbackFullName(body.introduction),
       title,
       email:
         manualContactHints.email ||
-        cleanText(personalInfo.email) ||
+        cleanText(contact.email) ||
+        cleanText(legacyPersonalInfo.email) ||
         uploadContactHints.email ||
-        'edit@email.com',
+        '',
       ...((manualContactHints.phone ||
-        cleanTextOrUndefined(personalInfo.phone) ||
+        cleanTextOrUndefined(contact.phone) ||
+        cleanTextOrUndefined(legacyPersonalInfo.phone) ||
         uploadContactHints.phone) && {
         phone:
           manualContactHints.phone ||
-          cleanText(personalInfo.phone) ||
+          cleanText(contact.phone) ||
+          cleanText(legacyPersonalInfo.phone) ||
           uploadContactHints.phone,
       }),
       ...((manualContactHints.location ||
-        cleanTextOrUndefined(personalInfo.location) ||
+        cleanTextOrUndefined(contact.location) ||
+        cleanTextOrUndefined(legacyPersonalInfo.location) ||
         uploadContactHints.location) && {
         location:
           manualContactHints.location ||
-          cleanText(personalInfo.location) ||
+          cleanText(contact.location) ||
+          cleanText(legacyPersonalInfo.location) ||
           uploadContactHints.location,
       }),
       ...((manualContactHints.website ||
-        manualContactHints.upwork ||
-        cleanTextOrUndefined(personalInfo.website) ||
-        uploadContactHints.website ||
-        uploadContactHints.upwork) && {
+        cleanTextOrUndefined(contact.website) ||
+        cleanTextOrUndefined(legacyPersonalInfo.website) ||
+        uploadContactHints.website) && {
         website:
           manualContactHints.website ||
-          manualContactHints.upwork ||
-          cleanText(personalInfo.website) ||
-          uploadContactHints.website ||
-          uploadContactHints.upwork,
+          cleanText(contact.website) ||
+          cleanText(legacyPersonalInfo.website) ||
+          uploadContactHints.website,
       }),
       ...((manualContactHints.linkedin ||
-        cleanTextOrUndefined(personalInfo.linkedin) ||
+        cleanTextOrUndefined(contact.linkedin) ||
+        cleanTextOrUndefined(legacyPersonalInfo.linkedin) ||
         uploadContactHints.linkedin) && {
         linkedin:
           manualContactHints.linkedin ||
-          cleanText(personalInfo.linkedin) ||
+          cleanText(contact.linkedin) ||
+          cleanText(legacyPersonalInfo.linkedin) ||
           uploadContactHints.linkedin,
       }),
       ...((manualContactHints.github ||
-        cleanTextOrUndefined(personalInfo.github) ||
+        cleanTextOrUndefined(contact.github) ||
+        cleanTextOrUndefined(legacyPersonalInfo.github) ||
         uploadContactHints.github) && {
         github:
           manualContactHints.github ||
-          cleanText(personalInfo.github) ||
+          cleanText(contact.github) ||
+          cleanText(legacyPersonalInfo.github) ||
           uploadContactHints.github,
       }),
+      ...((manualContactHints.upwork ||
+        cleanTextOrUndefined(contact.upwork) ||
+        uploadContactHints.upwork) && {
+        upwork:
+          manualContactHints.upwork ||
+          cleanText(contact.upwork) ||
+          uploadContactHints.upwork,
+      }),
     },
-    summary: cleanTextOrUndefined(result.summary) ?? buildFallbackSummary(body),
+    summary:
+      cleanTextOrUndefined(profile.summary) ??
+      cleanTextOrUndefined(legacy.summary) ??
+      buildFallbackSummary(body),
     experience:
       experience.length > 0 ? experience : buildFallbackExperience(body),
     education: normalizeEducation(result.education),
@@ -649,8 +717,8 @@ function toResumePayload(
 
   return {
     resume,
-    template: 'modern',
-    colorScheme: 'teal',
+    template: normalizeTemplate(result.presentation?.template),
+    colorScheme: normalizeColorScheme(result.presentation?.colorScheme),
   };
 }
 

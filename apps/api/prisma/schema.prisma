@@ -122,6 +122,7 @@ model Resume {
   website  String?
   linkedin String?
   github   String?
+  upwork   String?
   summary  String?
 
   skills         String[]

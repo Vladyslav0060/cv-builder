@@ -19,6 +19,7 @@ export const toResumeExportPayload = (resume: Resume): ResumeExportPayload => {
         website: resume.website ?? undefined,
         linkedin: resume.linkedin ?? undefined,
         github: resume.github ?? undefined,
+        upwork: resume.upwork ?? undefined,
       },
       summary: resume.summary ?? undefined,
       experience: (resume.experience as unknown as ResumeExperience[]) ?? [],
