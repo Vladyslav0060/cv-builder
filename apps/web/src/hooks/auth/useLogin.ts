@@ -12,8 +12,7 @@ export const useLogin = () => {
       const response = await authControllerLogin(data);
       return response.data;
     },
-    onSuccess: async (data) => {
-      console.log(data);
+    onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["me"] });
       toast("Logged in successfully");
       router.push("/");
