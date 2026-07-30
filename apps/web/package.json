@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "predev": "node ../../scripts/sync-resume-constructor-layout.mjs && npm run gen:api",
-    "dev": "next dev",
+    "dev": "node init && next dev",
     "prebuild": "node ../../scripts/sync-resume-constructor-layout.mjs && npm run gen:api",
-    "build": "next build",
-    "start": "next start",
+    "build": "node init && next build",
+    "start": "node init && next start",
     "lint": "eslint",
     "gen:api": "orval"
   },
