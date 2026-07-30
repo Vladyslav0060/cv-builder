@@ -3,8 +3,6 @@ dist
 build
 out
 .cache
-.env
-.env.local
 .next
 *.tsbuildinfo
 next-env.d.ts
@@ -29,3 +27,5 @@ docs
 .codex/
 CLAUDE.md
 skills-lock.json
+branch_structure.json
+config.bat
