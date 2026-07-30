@@ -21,3 +21,10 @@ yarn-error.log*
 temp_auto_push.bat
 temp_interactive_push.bat
 docs
+
+# Local assistant/tooling artifacts
+.agents/
+.claude/
+.codex/
+CLAUDE.md
+skills-lock.json
