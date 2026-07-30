@@ -138,17 +138,6 @@ export function AiResumeCreationForm() {
                 <CardTitle className="text-2xl leading-tight sm:text-3xl">
                   AI resume builder
                 </CardTitle>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isPending}
-                  onClick={handleAutofill}
-                  className="w-fit"
-                >
-                  <Sparkles className="size-4" />
-                  Autofill
-                </Button>
               </div>
               <CardDescription className="max-w-2xl text-sm leading-6 sm:text-base">
                 Start with a few notes. The resume opens in the editor with a
@@ -177,6 +166,17 @@ export function AiResumeCreationForm() {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-5 pt-5">
           <Field>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isPending}
+              onClick={handleAutofill}
+              className="w-fit! self-end"
+            >
+              <Sparkles className="size-4" />
+              Autofill With Sample Data
+            </Button>
             <FieldLabel>Introduce yourself</FieldLabel>
             <FieldContent>
               <Textarea
