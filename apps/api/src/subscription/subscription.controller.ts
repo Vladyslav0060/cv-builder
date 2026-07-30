@@ -14,9 +14,6 @@ import { SubscriptionService } from './subscription.service';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { AuthenticatedGuard } from 'src/auth/guards/authenticated.guard';
 import { SafeUser } from 'src/user/user.select';
-import { TierGuard } from 'src/auth/guards/tier.guard';
-import { RequireTier } from 'src/auth/decorators/require-tier.decorator';
-import { Tier } from 'generated/prisma/enums';
 import { PlanDto } from './dto/get-plans.dto';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
 import { CheckoutSessionDto } from './dto/checkout-session.dto';
@@ -34,14 +31,6 @@ export class SubscriptionController {
   @ApiOkResponse({ type: [PlanDto] })
   getPlans(): Promise<PlanDto[]> {
     return this.subscriptionService.getPlans();
-  }
-
-  @Post('test')
-  @UseGuards(TierGuard)
-  @RequireTier(Tier.pro)
-  test() {
-    console.log('test');
-    return 'test succeed';
   }
 
   @Post('checkout-session')

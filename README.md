@@ -6,7 +6,7 @@ The application helps users create, edit, store, and export professional career 
 
 ## Why This Project Exists
 
-This project is built to demonstrate how a senior developer approaches a real business product, not just a UI prototype.
+This project is built to demonstrate how I approach a real business product, not just a UI prototype.
 
 It focuses on:
 

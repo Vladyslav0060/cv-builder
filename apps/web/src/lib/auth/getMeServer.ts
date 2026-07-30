@@ -19,6 +19,5 @@ export async function getMeServer() {
   if (!res.ok) throw new Error(`Auth check failed: ${res.status}`);
 
   const data = await res.json();
-  console.log({ data }, { status: res.status });
   return data;
 }

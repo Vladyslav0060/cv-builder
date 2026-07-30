@@ -4,9 +4,11 @@ import { UsageQuotaService } from 'src/usage/usage-quota.service';
 import { type ResumeExportPayload } from '../shared/resume-constructor-data';
 import { DocumentApplicationService } from './document-application.service';
 import { DocumentCreationService } from './document-creation.service';
+import { ResumeAiCreationService } from './resume-ai-creation.service';
 import { ResumeGenerationService } from './resume-generation.service';
 import { ResumeMappingService } from './resume-mapping.service';
 import { ResumePdfExportService } from './resume-pdf-export.service';
+import { ResumeUploadTextService } from './resume-upload-text.service';
 
 describe('DocumentApplicationService', () => {
   let service: DocumentApplicationService;
@@ -14,6 +16,9 @@ describe('DocumentApplicationService', () => {
   let userService: Partial<Record<keyof UserService, jest.Mock>>;
   let documentCreationService: Partial<
     Record<keyof DocumentCreationService, jest.Mock>
+  >;
+  let resumeAiCreationService: Partial<
+    Record<keyof ResumeAiCreationService, jest.Mock>
   >;
   let resumeGenerationService: Partial<
     Record<keyof ResumeGenerationService, jest.Mock>
@@ -23,6 +28,9 @@ describe('DocumentApplicationService', () => {
   >;
   let resumePdfExportService: Partial<
     Record<keyof ResumePdfExportService, jest.Mock>
+  >;
+  let resumeUploadTextService: Partial<
+    Record<keyof ResumeUploadTextService, jest.Mock>
   >;
   let usageQuotaService: { consumeQuota: jest.Mock };
 
@@ -39,6 +47,9 @@ describe('DocumentApplicationService', () => {
     documentCreationService = {
       generateContent: jest.fn().mockResolvedValue('generated text'),
     };
+    resumeAiCreationService = {
+      generateResume: jest.fn().mockResolvedValue({}),
+    };
     resumeGenerationService = {
       generateResume: jest.fn().mockResolvedValue({}),
     };
@@ -51,6 +62,9 @@ describe('DocumentApplicationService', () => {
         filename: 'Jane_Doe.pdf',
       }),
     };
+    resumeUploadTextService = {
+      extractText: jest.fn().mockResolvedValue(undefined),
+    };
     usageQuotaService = {
       consumeQuota: jest.fn().mockResolvedValue(undefined),
     };
@@ -59,9 +73,11 @@ describe('DocumentApplicationService', () => {
       documentService as unknown as DocumentService,
       userService as unknown as UserService,
       documentCreationService as unknown as DocumentCreationService,
+      resumeAiCreationService as unknown as ResumeAiCreationService,
       resumeGenerationService as unknown as ResumeGenerationService,
       resumeMappingService as unknown as ResumeMappingService,
       resumePdfExportService as unknown as ResumePdfExportService,
+      resumeUploadTextService as unknown as ResumeUploadTextService,
       usageQuotaService as unknown as UsageQuotaService,
     );
   });
